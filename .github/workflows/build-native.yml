@@ -5,7 +5,7 @@ name: build-native
 
 on:
   push:
-    branches: [main]
+    branches: [main, prod]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
