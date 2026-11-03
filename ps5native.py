@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 import av
+from PIL import Image, ImageOps
 
 log = logging.getLogger("ps5native")
 
@@ -217,14 +218,30 @@ class NativeSession:
                     self.frame_time = time.time()
                     self.frames += 1
 
-    def jpeg(self, max_width: int = 1280, quality: int = 80) -> bytes | None:
+    def jpeg(self, max_width: int = 1280, quality: int = 80, enhance: bool = False,
+             crop: tuple[float, float, float, float] | None = None) -> bytes | None:
+        """Newest frame as JPEG.
+
+        crop: (x, y, w, h) as fractions of the frame, for zooming in on part
+        of the screen. enhance: stretch contrast and lift shadows, which makes
+        dark game scenes readable.
+        """
         with self._frame_lock:
             frame = self._frame
         if frame is None:
             return None
         img = frame.to_image()
-        if img.width > max_width:
-            img = img.resize((max_width, round(img.height * max_width / img.width)))
+        if crop:
+            x, y, w, h = (max(0.0, min(1.0, v)) for v in crop)
+            box = (int(x * img.width), int(y * img.height),
+                   int(min(1.0, x + w) * img.width), int(min(1.0, y + h) * img.height))
+            if box[2] > box[0] + 8 and box[3] > box[1] + 8:
+                img = img.crop(box)
+        if enhance:
+            img = ImageOps.autocontrast(img, cutoff=1)
+            img = img.point(lambda v: int(255 * (v / 255) ** 0.6))
+        if img.width != max_width and (crop or img.width > max_width):
+            img = img.resize((max_width, round(img.height * max_width / img.width)), Image.LANCZOS)
         out = io.BytesIO()
         img.save(out, "JPEG", quality=quality)
         return out.getvalue()
@@ -272,6 +289,21 @@ class NativeSession:
                 self._sticks[0], self._sticks[1] = sx, sy
             else:
                 self._sticks[2], self._sticks[3] = sx, sy
+            self._push()
+
+    def set_state(self, held: set[str], left: tuple[float, float] = (0.0, 0.0),
+                  right: tuple[float, float] = (0.0, 0.0)) -> None:
+        """Set the whole controller at once: these buttons down, everything else up."""
+        def axis(v: float) -> int:
+            return int(max(-1.0, min(1.0, v)) * 0x7FFF)
+        with self._input_lock:
+            self._buttons = 0
+            for name in held:
+                if name in BUTTONS:
+                    self._buttons |= BUTTONS[name]
+            self._l2 = 255 if "L2" in held else 0
+            self._r2 = 255 if "R2" in held else 0
+            self._sticks = [axis(left[0]), axis(left[1]), axis(right[0]), axis(right[1])]
             self._push()
 
     def keyboard_set_text(self, text: str) -> None:

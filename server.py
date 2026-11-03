@@ -6,6 +6,7 @@ server are both clients of this HTTP API, so they never fight over the PS5.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -42,6 +43,8 @@ PORT = int(os.environ.get("REMOTE_PORT", "8765"))
 IDLE_DISCONNECT_S = int(os.environ.get("IDLE_DISCONNECT_S", "900"))
 RESOLUTION = os.environ.get("PS5_RESOLUTION", "720p")
 FPS = int(os.environ.get("PS5_FPS", "60"))
+MAX_PLAY_FRAMES = 12
+MAX_PLAY_MS = 30000
 VALID_BUTTONS = {
     "UP", "DOWN", "LEFT", "RIGHT", "L1", "R1", "L2", "R2", "CROSS", "CIRCLE",
     "SQUARE", "TRIANGLE", "OPTIONS", "SHARE", "PS", "L3", "R3", "TOUCHPAD",
@@ -223,7 +226,8 @@ class Remote:
             return
         self.native.stick(which, x, y)
 
-    async def screenshot(self, width: int, wait_s: float = 6.0) -> bytes | None:
+    async def screenshot(self, width: int, wait_s: float = 6.0, enhance: bool = False,
+                         crop: tuple | None = None) -> bytes | None:
         self.touch()
         if not await self.ensure_session():
             return None
@@ -231,9 +235,61 @@ class Remote:
         while time.time() - start < wait_s:
             s = self.native
             if s and s.frame_time:
-                return await asyncio.to_thread(s.jpeg, width)
+                return await asyncio.to_thread(s.jpeg, width, 80, enhance, crop)
             await asyncio.sleep(0.2)
         return None
+
+    async def play(self, steps: list[dict], frame_every_ms: int, width: int, enhance: bool,
+                   source: str) -> dict:
+        """Run timed controller steps on the server clock, grabbing frames as it goes.
+
+        Each step sets the whole controller for `ms` milliseconds: `hold` lists
+        the buttons down, `left` and `right` are stick positions [x, y] from -1
+        to 1 (up is negative y). Everything is released at the end.
+        """
+        self.touch()
+        if not await self.ensure_session():
+            return {"ok": False, "error": self.message}
+        s = self.native
+        frames: list[tuple[float, bytes]] = []
+        t0 = time.monotonic()
+        next_shot = 0.0 if frame_every_ms else float("inf")
+
+        async def maybe_shot() -> None:
+            nonlocal next_shot
+            now = time.monotonic() - t0
+            if now >= next_shot and len(frames) < MAX_PLAY_FRAMES:
+                jpg = await asyncio.to_thread(s.jpeg, width, 75, enhance, None)
+                if jpg:
+                    frames.append((round(now, 2), jpg))
+                next_shot = now + frame_every_ms / 1000
+
+        summary = []
+        try:
+            for step in steps:
+                held = {b.upper() for b in step.get("hold", [])}
+                left = tuple(step.get("left") or (0, 0))[:2]
+                right = tuple(step.get("right") or (0, 0))[:2]
+                ms = max(0, min(10000, int(step.get("ms", 100))))
+                s.set_state(held, left, right)
+                summary.append("+".join(sorted(held)) + (f" L{list(left)}" if any(left) else "")
+                               + (f" R{list(right)}" if any(right) else "") + f" {ms}ms")
+                end = time.monotonic() + ms / 1000
+                while True:
+                    await maybe_shot()
+                    left_s = end - time.monotonic()
+                    if left_s <= 0:
+                        break
+                    await asyncio.sleep(min(0.03, left_s))
+        finally:
+            s.set_state(set())
+        await asyncio.sleep(0.15)
+        if frame_every_ms or not frames:
+            jpg = await asyncio.to_thread(s.jpeg, width, 80, enhance, None)
+            if jpg:
+                frames.append((round(time.monotonic() - t0, 2), jpg))
+        self.note(source, "play " + " | ".join(summary)[:180])
+        return {"ok": True, "frames": frames}
 
     async def type_text(self, text: str, submit: bool, source: str) -> dict:
         self.touch()
@@ -354,9 +410,20 @@ async def link(req):
     return web.json_response(await remote.link(str((await body_of(req)).get("pin", ""))))
 
 
+def _crop_of(value: str | None) -> tuple | None:
+    if not value:
+        return None
+    try:
+        parts = tuple(float(v) for v in value.split(","))
+    except ValueError:
+        return None
+    return parts if len(parts) == 4 else None
+
+
 async def screen(req):
     width = max(320, min(1920, int(req.query.get("w", "1280"))))
-    jpg = await remote.screenshot(width)
+    jpg = await remote.screenshot(width, enhance=req.query.get("enhance") == "1",
+                                  crop=_crop_of(req.query.get("crop")))
     if jpg is None:
         return web.json_response({"ok": False, "error": remote.message or "No video frame yet."}, status=503)
     return web.Response(body=jpg, content_type="image/jpeg", headers={"Cache-Control": "no-store"})
@@ -370,6 +437,32 @@ async def press(req):
     hold = max(30, min(3000, int(b.get("hold_ms", 100))))
     gap = max(0, min(5000, int(b.get("gap_ms", 250))))
     return web.json_response(await remote.press_sequence(buttons, hold, gap, source_of(req)))
+
+
+async def play(req):
+    """POST {"steps": [...], "frame_every_ms": 500, "width": 960, "enhance": false}.
+
+    Returns {"ok", "frames": [{"t": seconds, "jpeg_b64": ...}]}.
+    """
+    b = await body_of(req)
+    steps = b.get("steps") or []
+    if not isinstance(steps, list) or not steps:
+        return web.json_response({"ok": False, "error": "steps must be a non-empty list"}, status=400)
+    bad = sorted({h.upper() for st in steps for h in st.get("hold", [])} - VALID_BUTTONS)
+    if bad:
+        return web.json_response({"ok": False, "error": f"Unknown buttons {bad}. Valid: {sorted(VALID_BUTTONS)}"}, status=400)
+    total = sum(int(st.get("ms", 100)) for st in steps)
+    if total > MAX_PLAY_MS:
+        return web.json_response({"ok": False, "error": f"Sequence is {total} ms; the limit is {MAX_PLAY_MS}."}, status=400)
+    every = max(0, int(b.get("frame_every_ms", 0)))
+    if every:
+        every = max(150, every)
+    width = max(320, min(1920, int(b.get("width", 960))))
+    res = await remote.play(steps, every, width, bool(b.get("enhance")), source_of(req))
+    if not res.get("ok"):
+        return web.json_response(res, status=503)
+    return web.json_response({"ok": True, "frames": [
+        {"t": t, "jpeg_b64": base64.b64encode(j).decode()} for t, j in res["frames"]]})
 
 
 async def text(req):
@@ -484,6 +577,7 @@ def main() -> None:
         web.get("/api/screen.jpg", screen),
         web.post("/api/press", press),
         web.post("/api/text", text),
+        web.post("/api/play", play),
         web.post("/api/action/{name}", action),
         web.get("/api/psn/status", psn_status),
         web.post("/api/psn/npsso", psn_npsso),

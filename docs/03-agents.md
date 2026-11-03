@@ -65,7 +65,8 @@ up as `mcp__ps5__*`.
 
 | Tool | What it does |
 |---|---|
-| `ps5_look` | Screenshot plus a status line (power, running app, keyboard, blocked picture) |
+| `ps5_look` | Screenshot plus a status line (power, running app, keyboard, blocked picture). Options: `enhance` for dark scenes, `zoom` to crop into a HUD |
+| `ps5_play` | Play games: timed controller states (sticks, held buttons, triggers) run on the server clock, with frames captured during the run |
 | `ps5_press` | Press buttons in order, then return a screenshot |
 | `ps5_type` | Type into the PS5 keyboard (a text field must be selected first) |
 | `ps5_home` | Go to the Home screen |
@@ -102,8 +103,38 @@ look, press, look loop. The status line warns when the PS5 is hiding the
 picture because a video app is on screen. Buttons still work then, and
 `ps5_home` brings the picture back.
 
-Each call takes about a second, so agents are good at menus, stores and
-search, and too slow for fast action games.
+## Playing games
+
+`ps5_play` takes a list of steps. Each step is a whole controller state held
+for a number of milliseconds:
+
+```json
+[
+  {"left": [1, 0], "ms": 1000},
+  {"left": [1, 0], "hold": ["CROSS"], "ms": 400},
+  {"hold": ["R2"], "right": [0.5, -0.5], "ms": 1500},
+  {"ms": 500}
+]
+```
+
+That walks right for a second, jumps while still walking, aims up-right and
+holds R2 for 1.5 seconds, then waits half a second. Sticks run from -1 to 1
+(right is +x, up is -y). Anything not listed in a step is released, and
+everything is released at the end. One call can run up to 30 seconds.
+
+The timing runs on the server, not through the agent, so a 400 ms jump is
+400 ms. `frames` (up to 12) returns screenshots spread across the run, so
+the agent sees what happened while it acted. `enhance` brightens dark
+scenes.
+
+The agent loop is: look, plan a 1 to 4 second burst, play it, read the
+frames, adjust. Thinking between bursts takes a few seconds while the game
+keeps running, so the agent is told to pause in action games before it
+thinks for long or hands control back.
+
+What works well: exploring, mining, building, menus, turn-based and slower
+games. Fast reflex combat is still hard, because the agent reacts in
+seconds, not milliseconds.
 
 ## Several agents at once
 

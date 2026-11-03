@@ -19,7 +19,8 @@ isn't open.
 
 | Method | Path | Body | Notes |
 |---|---|---|---|
-| GET | `/api/screen.jpg?w=1280` | | JPEG of the newest frame. `w` from 320 to 1920 |
+| GET | `/api/screen.jpg?w=1280&enhance=1&crop=0.75,0,0.25,0.2` | | JPEG of the newest frame. `w` from 320 to 1920. `enhance=1` brightens dark scenes. `crop` is x,y,w,h as fractions |
+| POST | `/api/play` | `{"steps": [{"left": [1,0], "hold": ["CROSS"], "ms": 400}], "frame_every_ms": 500, "width": 960, "enhance": false}` | Timed controller states, up to 30 s total. Returns `{"frames": [{"t", "jpeg_b64"}]}` (max 12 plus a final frame) |
 | POST | `/api/press` | `{"buttons": ["DOWN","CROSS"], "hold_ms": 100, "gap_ms": 250}` | Taps in order |
 | POST | `/api/text` | `{"text": "lofi", "submit": true}` | PS5 keyboard must be open |
 | POST | `/api/action/home` | | Home screen |

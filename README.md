@@ -10,6 +10,9 @@ Sony's Remote Play protocol on your home network and gives you:
 - **Agent tools (MCP).** Claude Code, Claude Desktop, Cursor, DeepSeek Harness
   and any other MCP client can see the screen, press buttons, type, go Home,
   and turn the console on or off.
+- **Agents that play games.** `ps5_play` runs timed stick, button and
+  trigger input on the server clock and returns frames captured during the
+  move, so an agent can walk, jump, aim and fight, and see what happened.
 - **PlayStation Network lookups.** Search your game library and the
   PlayStation Store (with prices and whether you already own a game), and see
   what your account is playing.
