@@ -1,0 +1,63 @@
+name: build-native
+
+# Builds native/ps5bridge.dll from source on every push and pull request.
+# On a v* tag it also publishes the DLL and its SHA-256 as a GitHub release.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch chiaki-ng v1.10.0 source
+        run: git clone --depth 1 --branch v1.10.0 --recurse-submodules --shallow-submodules https://github.com/streetpea/chiaki-ng.git vendor/chiaki-ng-src
+
+      - name: Install build tools
+        run: python -m pip install ziglang "protobuf>=4,<6" grpcio-tools requests
+
+      - name: Build ps5bridge.dll
+        run: python tools/build_native.py
+
+      - name: Check the app imports with the DLL
+        shell: pwsh
+        run: |
+          python -m pip install -r requirements.txt
+          python -c "import ps5native; ps5native.dll(); import server, mcp_server; print('imports ok')"
+
+      - name: Hash
+        shell: pwsh
+        run: |
+          $sha = (Get-FileHash native/ps5bridge.dll -Algorithm SHA256).Hash.ToLower()
+          "$sha  ps5bridge.dll" | Out-File -Encoding ascii native/ps5bridge.dll.sha256
+          "SHA-256: $sha"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ps5bridge
+          path: |
+            native/ps5bridge.dll
+            native/ps5bridge.dll.sha256
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $sha = (Get-Content native/ps5bridge.dll.sha256).Split(' ')[0]
+          $notes = "Download ps5bridge.dll into the native folder (see docs/01-install.md).`n`nps5bridge.dll SHA-256: $sha`n`nBuilt by GitHub Actions from this tag with tools/build_native.py (chiaki-ng v1.10.0, Mbed TLS 2.28.10)."
+          gh release create $env:GITHUB_REF_NAME native/ps5bridge.dll native/ps5bridge.dll.sha256 --title $env:GITHUB_REF_NAME --notes $notes

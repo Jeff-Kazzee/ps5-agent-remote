@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PS5 Remote</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --panel2: #1b2130; --line: #262d3d;
+    --text: #e8ecf4; --dim: #8a93a6; --blue: #2f6bff; --ok: #3ccf7a; --warn: #f2b84b; --bad: #ff5d6c;
+    --cross: #7aa7ff; --circle: #ff6f7d; --square: #e58bd8; --tri: #44d6b2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(1200px 600px at 50% -200px, #1a2340, var(--bg)); color: var(--text);
+         font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  header.card { display: flex; gap: 16px; align-items: center; }
+  .cover { width: 72px; height: 72px; border-radius: 12px; background: var(--panel2) center/cover; flex: none;
+           display: grid; place-items: center; font-size: 28px; color: var(--dim); }
+  .np { flex: 1; min-width: 0; }
+  .np .label { color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  .np .title { font-size: 20px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np .sub { color: var(--dim); font-size: 12px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .pill { padding: 4px 10px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--line); font-size: 12px; }
+  .pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+  .msg { color: var(--dim); font-size: 13px; min-height: 18px; }
+
+  .remote { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: center; }
+  @media (max-width: 760px) { .remote { grid-template-columns: 1fr; } }
+  button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line);
+           border-radius: 12px; cursor: pointer; user-select: none; touch-action: none; transition: transform .05s, background .1s; }
+  button:hover { background: #222a3c; }
+  button.down, button:active { transform: scale(.94); background: #2a3550; }
+  .shoulders { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .shoulders button { padding: 10px; font-weight: 600; }
+
+  .pad { position: relative; width: 210px; height: 210px; margin: 0 auto; }
+  .pad button { position: absolute; width: 68px; height: 68px; font-size: 22px; }
+  .pad .n { left: 71px; top: 0; } .pad .s { left: 71px; bottom: 0; }
+  .pad .w { left: 0; top: 71px; } .pad .e { right: 0; top: 71px; }
+  .face button { border-radius: 50%; font-size: 26px; font-weight: 700; }
+  .face .n { color: var(--tri); } .face .e { color: var(--circle); }
+  .face .s { color: var(--cross); } .face .w { color: var(--square); }
+
+  .center { display: grid; gap: 10px; justify-items: center; }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .small { padding: 8px 14px; font-size: 13px; }
+  .ps { width: 72px; height: 72px; border-radius: 50%; font-weight: 800; font-size: 18px; background: #1f2a48; }
+  .touch { width: 180px; height: 54px; color: var(--dim); }
+  .stick { width: 120px; height: 120px; border-radius: 50%; background: var(--panel2); border: 1px solid var(--line);
+           position: relative; touch-action: none; }
+  .stick .knob { position: absolute; width: 44px; height: 44px; border-radius: 50%; background: #2c3854;
+                 left: 38px; top: 38px; pointer-events: none; }
+  .sticks { display: flex; gap: 24px; justify-content: center; align-items: center; }
+  .sticks .cap { color: var(--dim); font-size: 11px; text-align: center; margin-top: 4px; }
+
+  .power { display: flex; gap: 10px; flex-wrap: wrap; }
+  .power button { padding: 10px 16px; }
+  .power .on { color: var(--ok); } .power .off { color: var(--warn); }
+  .keys { color: var(--dim); font-size: 12px; }
+  kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; font-size: 11px; }
+
+  #setup ol { padding-left: 20px; } #setup li { margin: 10px 0; }
+  input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+          padding: 9px 12px; width: 100%; }
+  .inline { display: flex; gap: 8px; margin-top: 6px; } .inline input { flex: 1; }
+  a { color: var(--cross); }
+  .hidden { display: none !important; }
+  main { max-width: 1240px; }
+  .top { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  @media (max-width: 980px) { .top { grid-template-columns: 1fr; } }
+  .screen { aspect-ratio: 16/9; width: 100%; border-radius: 12px; background: #05070b center/contain no-repeat;
+            display: grid; place-items: center; color: var(--dim); border: 1px solid var(--line); overflow: hidden; }
+  .screen img { width: 100%; height: 100%; object-fit: contain; }
+  .bar { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+  .bar input { flex: 1; min-width: 160px; }
+  .toggle { display: flex; gap: 6px; align-items: center; color: var(--dim); font-size: 13px; }
+  .feed { max-height: 260px; overflow: auto; display: grid; gap: 4px; font-size: 13px; }
+  .feed .row { display: flex; gap: 8px; } .feed .t { color: var(--dim); flex: none; width: 62px; }
+  .feed .agent { color: var(--tri); } .feed .ui { color: var(--dim); }
+  .side { display: grid; gap: 16px; align-content: start; }
+  h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+  .results { display: grid; gap: 6px; max-height: 320px; overflow: auto; margin-top: 8px; font-size: 13px; }
+  .results .g { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; background: var(--panel2); border-radius: 8px; }
+  .results .g span:last-child { color: var(--dim); white-space: nowrap; }
+  .owned { color: var(--ok) !important; }
+</style>
+</head>
+<body>
+<main>
+  <header class="card">
+    <div class="cover" id="cover">▶</div>
+    <div class="np">
+      <div class="label">Now on PS5</div>
+      <div class="title" id="app">...</div>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="pills">
+      <span class="pill" id="power">PS5 ?</span>
+      <span class="pill" id="link">Remote ?</span>
+    </div>
+  </header>
+
+  <section class="card hidden" id="setup">
+    <strong>One-time setup: link this laptop to your PS5</strong>
+    <ol>
+      <li>Sign in at <a href="https://www.playstation.com/" target="_blank">playstation.com</a> (top right, Sign In).
+        Then open <a href="https://ca.account.sony.com/api/v1/ssocookie" target="_blank">this link</a> in the same browser.
+        It shows a line like <code>{"npsso":"..."}</code>. Copy all of it and paste it here.
+        <div class="inline"><input id="redirect" type="password" placeholder='{"npsso":"..."}'><button class="small" id="signin">Save</button></div>
+      </li>
+      <li>On the PS5: Settings → System → Remote Play → Link Device. Type the 8-digit PIN here.
+        <div class="inline"><input id="pin" placeholder="12345678" inputmode="numeric" maxlength="9"><button class="small" id="linkbtn">Link</button></div>
+      </li>
+    </ol>
+    <div class="msg" id="setupmsg"></div>
+  </section>
+
+  <div class="top">
+    <section class="card">
+      <div class="screen" id="screenbox"><img id="screen" class="hidden" alt="PS5 screen"><span id="screenmsg">Turn on Live view to see the PS5 screen</span></div>
+      <div class="bar">
+        <label class="toggle"><input type="checkbox" id="live" style="width:auto"> Live view</label>
+        <button class="small" data-act="home">⌂ Home</button>
+        <input id="typetext" placeholder="Type into the PS5 keyboard (select a search box first)">
+        <button class="small" id="typebtn">Send</button>
+      </div>
+    </section>
+    <div class="side">
+      <section class="card">
+        <h3>Activity</h3>
+        <div class="feed" id="feed"><span class="msg">Nothing yet.</span></div>
+      </section>
+      <section class="card">
+        <h3>PlayStation Network</h3>
+        <div id="psnsetup" class="hidden">
+          <div class="msg">To see your library and the store: sign in at playstation.com, then open
+            <a href="https://ca.account.sony.com/api/v1/ssocookie" target="_blank">this link</a> and paste everything it shows.</div>
+          <div class="inline"><input id="npsso" type="password" placeholder='{"npsso":"..."}'><button class="small" id="npssobtn">Save</button></div>
+        </div>
+        <div id="psnready" class="hidden">
+          <div class="inline"><input id="psnq" placeholder="Game name"><button class="small" id="libbtn">My library</button><button class="small" id="storebtn">Store</button></div>
+        </div>
+        <div class="msg" id="psnmsg"></div>
+        <div class="results" id="results"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="remote">
+      <div class="center">
+        <div class="shoulders" style="width:210px">
+          <button data-b="L2">L2</button><button data-b="R2">R2</button>
+          <button data-b="L1">L1</button><button data-b="R1">R1</button>
+        </div>
+        <div class="pad">
+          <button class="n" data-b="UP">▲</button><button class="w" data-b="LEFT">◀</button>
+          <button class="e" data-b="RIGHT">▶</button><button class="s" data-b="DOWN">▼</button>
+        </div>
+      </div>
+
+      <div class="center">
+        <div class="row"><button class="small" data-b="SHARE">Create</button><button class="small" data-b="OPTIONS">Options ☰</button></div>
+        <button class="touch" data-b="TOUCHPAD">Touchpad</button>
+        <button class="ps" data-b="PS" title="Tap for Control Center. Hold for Home.">PS</button>
+        <div class="sticks">
+          <div><div class="stick" data-stick="left"><div class="knob"></div></div><div class="cap">L stick · <button class="small" data-b="L3" style="padding:2px 8px">L3</button></div></div>
+          <div><div class="stick" data-stick="right"><div class="knob"></div></div><div class="cap">R stick · <button class="small" data-b="R3" style="padding:2px 8px">R3</button></div></div>
+        </div>
+      </div>
+
+      <div class="center">
+        <div style="height:92px"></div>
+        <div class="pad face">
+          <button class="n" data-b="TRIANGLE">△</button><button class="w" data-b="SQUARE">□</button>
+          <button class="e" data-b="CIRCLE">○</button><button class="s" data-b="CROSS">✕</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="power">
+      <button class="on" data-act="wake">⏻ Power on</button>
+      <button class="off" data-act="rest">☾ Rest mode</button>
+      <button data-act="connect">Connect</button>
+      <button data-act="disconnect">Disconnect</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    <div class="keys">
+      Keys: <kbd>←↑→↓</kbd> D-pad · <kbd>Enter</kbd> ✕ · <kbd>Backspace</kbd> ○ · <kbd>T</kbd> △ · <kbd>S</kbd> □ ·
+      <kbd>P</kbd> PS · <kbd>O</kbd> Options · <kbd>C</kbd> Create · <kbd>Q</kbd>/<kbd>E</kbd> L1/R1 · <kbd>1</kbd>/<kbd>3</kbd> L2/R2
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let ws;
+function connectWs() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onclose = () => setTimeout(connectWs, 1000);
+}
+connectWs();
+const send = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+const btn = (b, action) => send({ type: "button", button: b, action });
+
+// On-screen buttons: press on pointer down, release on pointer up, so holds work (hold PS for Home).
+document.querySelectorAll("[data-b]").forEach((el) => {
+  const b = el.dataset.b;
+  let held = false;
+  el.addEventListener("pointerdown", (e) => { e.preventDefault(); held = true; el.classList.add("down"); btn(b, "press"); });
+  const up = () => { if (!held) return; held = false; el.classList.remove("down"); btn(b, "release"); };
+  el.addEventListener("pointerup", up); el.addEventListener("pointerleave", up); el.addEventListener("pointercancel", up);
+});
+
+const KEYS = { ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT", Enter: "CROSS", Backspace: "CIRCLE",
+  t: "TRIANGLE", s: "SQUARE", p: "PS", o: "OPTIONS", c: "SHARE", q: "L1", e: "R1", "1": "L2", "3": "R2" };
+const keyFor = (e) => KEYS[e.key] || KEYS[e.key.toLowerCase()];
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT") return;
+  const b = keyFor(e); if (!b) return;
+  e.preventDefault(); if (e.repeat) return;
+  document.querySelector(`[data-b="${b}"]`)?.classList.add("down"); btn(b, "press");
+});
+document.addEventListener("keyup", (e) => {
+  if (e.target.tagName === "INPUT") return;
+  const b = keyFor(e); if (!b) return;
+  document.querySelector(`[data-b="${b}"]`)?.classList.remove("down"); btn(b, "release");
+});
+
+// Virtual sticks.
+document.querySelectorAll("[data-stick]").forEach((pad) => {
+  const knob = pad.querySelector(".knob"); const which = pad.dataset.stick;
+  let active = false, last = 0;
+  const move = (e) => {
+    const r = pad.getBoundingClientRect(); const rad = r.width / 2;
+    let x = (e.clientX - r.left - rad) / rad, y = (e.clientY - r.top - rad) / rad;
+    const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+    knob.style.transform = `translate(${x * 38}px, ${y * 38}px)`;
+    const now = performance.now(); if (now - last > 40) { last = now; send({ type: "stick", stick: which, x, y }); }
+  };
+  pad.addEventListener("pointerdown", (e) => { active = true; pad.setPointerCapture(e.pointerId); move(e); });
+  pad.addEventListener("pointermove", (e) => active && move(e));
+  const end = () => { if (!active) return; active = false; knob.style.transform = ""; send({ type: "stick", stick: which, x: 0, y: 0 }); };
+  pad.addEventListener("pointerup", end); pad.addEventListener("pointercancel", end);
+});
+
+document.querySelectorAll("[data-act]").forEach((el) =>
+  el.addEventListener("click", async () => {
+    const j = await (await fetch(`/api/action/${el.dataset.act}`, { method: "POST" })).json();
+    if (j.state) render(j.state);
+    if (!j.ok && j.error) $("msg").textContent = j.error;
+  }));
+
+// Setup flow.
+$("signin").addEventListener("click", async () => {
+  $("setupmsg").textContent = "Signing in...";
+  const r = await (await fetch("/api/sign-in", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ npsso: $("redirect").value }) })).json();
+  if (r.ok) { $("redirect").value = ""; psnStatus(); }
+  $("setupmsg").textContent = r.ok ? `Signed in as ${r.user}. Now do step 2.` : r.error;
+});
+$("linkbtn").addEventListener("click", async () => {
+  if (!lastState?.signed_in) { $("setupmsg").textContent = "Do step 1 first."; return; }
+  $("setupmsg").textContent = "Linking...";
+  const r = await (await fetch("/api/link", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin: $("pin").value }) })).json();
+  $("setupmsg").textContent = r.ok ? "Linked. The remote is ready." : r.error;
+});
+
+let lastState = null;
+function render(s) {
+  lastState = s;
+  $("app").textContent = s.power === "on" ? (s.app || "Home screen") : s.power === "standby" ? "Rest mode" : "Not found";
+  $("sub").textContent = [s.name, s.title_id, s.firmware && `FW ${s.firmware}`].filter(Boolean).join(" · ");
+  const p = $("power");
+  p.textContent = s.power === "on" ? "PS5 on" : s.power === "standby" ? "PS5 resting" : "PS5 offline";
+  p.className = "pill " + (s.power === "on" ? "ok" : s.power === "standby" ? "warn" : "bad");
+  const l = $("link");
+  l.textContent = !s.linked ? "Not linked" : s.connected ? "Remote connected" : s.connecting ? "Connecting..." : "Remote idle";
+  l.className = "pill " + (!s.linked ? "bad" : s.connected ? "ok" : "warn");
+  $("setup").classList.toggle("hidden", !!s.linked || !s.reachable);
+  $("msg").textContent = s.protected_content
+    ? "The PS5 is hiding protected video content from Remote Play, so the picture is black. Press Home to bring it back."
+    : (s.message || "");
+}
+async function tick() {
+  try { render(await (await fetch("/api/state")).json()); } catch {}
+}
+tick(); setInterval(tick, 2000);
+
+// Live screen. Polls a JPEG while the box is checked.
+let liveTimer = null;
+async function frame() {
+  try {
+    const r = await fetch(`/api/screen.jpg?w=960&t=${Date.now()}`);
+    if (r.ok && r.headers.get("content-type") === "image/jpeg") {
+      const url = URL.createObjectURL(await r.blob());
+      const img = $("screen"); const old = img.src; img.src = url; img.classList.remove("hidden");
+      $("screenmsg").classList.add("hidden"); if (old.startsWith("blob:")) URL.revokeObjectURL(old);
+    } else {
+      const j = await r.json().catch(() => ({})); $("screenmsg").textContent = j.error || "No picture yet.";
+      $("screenmsg").classList.remove("hidden");
+    }
+  } catch {}
+  if ($("live").checked) liveTimer = setTimeout(frame, 700);
+}
+$("live").addEventListener("change", () => { clearTimeout(liveTimer); if ($("live").checked) { $("screenmsg").textContent = "Connecting..."; frame(); } });
+
+async function sendText() {
+  const text = $("typetext").value; if (!text) return;
+  const r = await (await fetch("/api/text", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, submit: true }) })).json();
+  $("msg").textContent = r.ok ? (r.hint || "Sent.") : r.error; if (r.ok) $("typetext").value = "";
+}
+$("typebtn").addEventListener("click", sendText);
+$("typetext").addEventListener("keydown", (e) => { if (e.key === "Enter") sendText(); });
+
+// Activity feed.
+async function feed() {
+  try {
+    const items = await (await fetch("/api/activity")).json();
+    if (!items.length) return;
+    $("feed").innerHTML = items.map((i) => `<div class="row"><span class="t">${new Date(i.t * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>`
+      + `<span class="${i.source === "agent" ? "agent" : "ui"}">${i.source === "agent" ? "🤖 " : ""}${esc(i.text)}</span></div>`).join("");
+  } catch {}
+}
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+feed(); setInterval(feed, 2000);
+
+// PSN panel.
+async function psnStatus() {
+  const s = await (await fetch("/api/psn/status")).json();
+  $("psnsetup").classList.toggle("hidden", s.configured); $("psnready").classList.toggle("hidden", !s.configured);
+}
+psnStatus();
+$("npssobtn").addEventListener("click", async () => {
+  $("psnmsg").textContent = "Checking with Sony...";
+  const r = await (await fetch("/api/psn/npsso", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ npsso: $("npsso").value }) })).json();
+  $("npsso").value = ""; $("psnmsg").textContent = r.ok ? `Connected as ${r.online_id}.` : r.error; psnStatus();
+});
+async function psnSearch(kind) {
+  const q = $("psnq").value.trim(); if (kind === "store" && !q) return;
+  $("psnmsg").textContent = "Searching..."; $("results").innerHTML = "";
+  const url = kind === "store" ? `/api/psn/store?q=${encodeURIComponent(q)}` : `/api/psn/library?q=${encodeURIComponent(q)}&limit=50`;
+  const r = await (await fetch(url)).json();
+  if (!r.ok) { $("psnmsg").textContent = r.error; return; }
+  const rows = kind === "store" ? r.results : r.games;
+  $("psnmsg").textContent = kind === "store" ? `${rows.length} store results` : `${r.matches} of ${r.total} games`;
+  $("results").innerHTML = rows.map((g) => `<div class="g"><span>${esc(g.name)}</span><span class="${g.owned ? "owned" : ""}">`
+    + (kind === "store" ? (g.owned ? "Owned" : esc(g.price || "")) : esc((g.platforms || []).join(" ") + (g.play_hours ? ` · ${g.play_hours} h` : "")))
+    + `</span></div>`).join("");
+}
+$("libbtn").addEventListener("click", () => psnSearch("library"));
+$("storebtn").addEventListener("click", () => psnSearch("store"));
+$("psnq").addEventListener("keydown", (e) => { if (e.key === "Enter") psnSearch("store"); });
+</script>
+</body>
+</html>

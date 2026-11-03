@@ -1,0 +1,12 @@
+.venv/
+.buildenv/
+__pycache__/
+*.log
+.env.local
+.env.*.local
+vendor/
+native/build/
+native/*.dll
+native/*.lib
+native/*.pdb
+dsh-bundle/
