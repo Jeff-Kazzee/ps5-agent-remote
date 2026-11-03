@@ -114,9 +114,15 @@ on 127.0.0.1 only. The only internet calls are PSN lookups to Sony.
 
 ## License and credits
 
-AGPL-3.0, because the native library links
-[chiaki-ng](https://github.com/streetpea/chiaki-ng) (AGPL-3.0). See
-[LICENSE](LICENSE) and [THIRD_PARTY.md](THIRD_PARTY.md).
+The server, web remote, agent tools, PSN code and docs are **MIT**. Use
+them however you like.
+
+The native Remote Play engine (`native/` sources, `tools/build_native.py`
+and the released `ps5bridge.dll`) is **AGPL-3.0**, because it is built from
+[chiaki-ng](https://github.com/streetpea/chiaki-ng)'s libchiaki, which is
+AGPL-3.0. If you distribute a changed version of the engine, its source has
+to stay open. See [LICENSE](LICENSE), [native/LICENSE-AGPL-3.0](native/LICENSE-AGPL-3.0)
+and [THIRD_PARTY.md](THIRD_PARTY.md).
 
 Built on chiaki-ng's libchiaki, Mbed TLS, nanopb, Jerasure and gf-complete
 (native), and on psnawp, PyAV, aiohttp and the MCP Python SDK.
