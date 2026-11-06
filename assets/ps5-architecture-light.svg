@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="340" viewBox="0 0 960 340" role="img" aria-labelledby="t d">
+<title id="t">PS5 Agent Remote architecture</title><desc id="d">The browser page and an MCP agent share one local server. The server owns the single Remote Play session through ps5bridge.dll, finds and wakes the console over UDP, and calls Sony only for PSN lookups.</desc>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#818b98"/></marker><marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#0b5cd5"/></marker></defs>
+<g font-family="ui-sans-serif,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif">
+<rect x="20" y="20" width="690" height="300" rx="14" fill="none" stroke="#d1d9e0" stroke-width="1.5"/>
+<text x="36" y="44" font-size="12" letter-spacing="0.6" fill="#59636e">YOUR COMPUTER, 127.0.0.1:8765</text>
+<path d="M214 98C250 98 250 140 278 146" fill="none" stroke="#818b98" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="129" y="172" font-size="12" fill="#59636e" text-anchor="middle">HTTP and WebSocket</text>
+<path d="M214 236C250 236 250 190 278 184" fill="none" stroke="#818b98" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M450 150C480 140 480 100 508 98" fill="none" stroke="#0b5cd5" stroke-width="2" marker-end="url(#b)"/>
+<path d="M450 170C470 174 490 180 508 183" fill="none" stroke="#818b98" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M450 190C480 200 480 262 508 265" fill="none" stroke="#818b98" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M686 98H768" fill="none" stroke="#0b5cd5" stroke-width="2" marker-end="url(#b)"/>
+<text x="727" y="88" font-size="12" fill="#59636e" text-anchor="middle">Remote Play</text>
+<path d="M686 183H768" fill="none" stroke="#818b98" stroke-width="1.5" marker-end="url(#a)"/>
+<path d="M686 265H768" fill="none" stroke="#818b98" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="44" y="62" width="170" height="72" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="129" y="86" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">Browser page</text>
+<text x="129" y="104" font-size="12.5" fill="#59636e" text-anchor="middle">buttons, sticks,</text>
+<text x="129" y="122" font-size="12.5" fill="#59636e" text-anchor="middle">live view, typing</text>
+<rect x="44" y="200" width="170" height="72" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="129" y="224" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">mcp_server.py</text>
+<text x="129" y="242" font-size="12.5" fill="#59636e" text-anchor="middle">nine tools for</text>
+<text x="129" y="260" font-size="12.5" fill="#59636e" text-anchor="middle">an MCP client</text>
+<rect x="280" y="120" width="170" height="90" rx="10" fill="#f6f8fa" stroke="#0b5cd5" stroke-width="2"/>
+<text x="365" y="153" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">server.py</text>
+<text x="365" y="171" font-size="12.5" fill="#59636e" text-anchor="middle">owns the one</text>
+<text x="365" y="189" font-size="12.5" fill="#59636e" text-anchor="middle">Remote Play session</text>
+<rect x="510" y="62" width="176" height="72" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="598" y="86" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">ps5bridge.dll</text>
+<text x="598" y="104" font-size="12.5" fill="#59636e" text-anchor="middle">libchiaki and a</text>
+<text x="598" y="122" font-size="12.5" fill="#59636e" text-anchor="middle">small C API</text>
+<rect x="510" y="150" width="176" height="66" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="598" y="179.5" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">ddp.py</text>
+<text x="598" y="197.5" font-size="12.5" fill="#59636e" text-anchor="middle">find and wake, UDP 9302</text>
+<rect x="510" y="232" width="176" height="66" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="598" y="261.5" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">psn.py</text>
+<text x="598" y="279.5" font-size="12.5" fill="#59636e" text-anchor="middle">library, store, presence</text>
+<rect x="770" y="62" width="170" height="154" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="855" y="135.5" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">PS5</text>
+<text x="855" y="153.5" font-size="12.5" fill="#59636e" text-anchor="middle">same home network</text>
+<rect x="770" y="232" width="170" height="66" rx="10" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.2"/>
+<text x="855" y="261.5" font-size="14.5" font-weight="600" fill="#1f2328" text-anchor="middle">Sony PSN</text>
+<text x="855" y="279.5" font-size="12.5" fill="#59636e" text-anchor="middle">the only internet calls</text>
+</g></svg>
