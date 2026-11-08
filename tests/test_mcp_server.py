@@ -159,6 +159,15 @@ class Ps5LookTest(ToolTestCase):
         self.assertIn("did not answer within 45 seconds", str(ctx.exception))
 
 
+    def test_ps5_look_reports_a_connect_timeout_as_a_timeout(self):
+        # ConnectTimeout is both a ConnectionError and a Timeout. It means the server was
+        # not reached in time, not that it is stopped.
+        with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ConnectTimeout()):
+            with self.assertRaises(ToolError) as ctx:
+                call("ps5_look")
+        self.assertIn("did not answer within 45 seconds", str(ctx.exception))
+
+
 class Ps5PlayTest(ToolTestCase):
     def test_ps5_play_sends_steps_and_returns_frames(self):
         frame = {"t": 0.5, "jpeg_b64": base64.b64encode(JPEG).decode()}
