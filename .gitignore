@@ -10,3 +10,8 @@ native/*.dll
 native/*.lib
 native/*.pdb
 dsh-bundle/
+
+# ~/.gitignore_global ignores .claude/. Track .claude/skills/ only.
+!.claude/
+.claude/*
+!.claude/skills/

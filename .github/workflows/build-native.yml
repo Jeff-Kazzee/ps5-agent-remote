@@ -1,6 +1,7 @@
 name: build-native
 
-# Builds native/ps5bridge.dll from source on every push and pull request.
+# Builds native/ps5bridge.dll from source and runs the unit tests on every pull
+# request and on pushes to prod.
 # On a v* tag it also publishes the DLL and its SHA-256 as a GitHub release.
 
 on:
@@ -37,6 +38,9 @@ jobs:
         run: |
           python -m pip install -r requirements.txt
           python -c "import ps5native; ps5native.dll(); import server, mcp_server; print('imports ok')"
+
+      - name: Run the unit tests
+        run: python -m unittest discover -s tests -v
 
       - name: Hash
         shell: pwsh
