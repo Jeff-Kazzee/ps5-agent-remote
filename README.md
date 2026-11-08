@@ -1,5 +1,8 @@
 # PS5 Agent Remote
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/jeff-kazzee-ps5-agent-remote-4x46zm?v=0a03a4527eee34409fa622331393e13d)](https://m8ven.ai/mcp/jeff-kazzee-ps5-agent-remote-4x46zm?s=readme)
+[![M8ven Score](https://m8ven.ai/badge/mcp/jeff-kazzee/ps5-agent-remote)](https://m8ven.ai/mcp/jeff-kazzee/ps5-agent-remote?s=readme)
+
 Control your PS5 from a browser or an AI agent.
 
 ![The web remote. A live view of the PS5 home screen with Terraria selected, a PlayStation Store search with prices and owned games marked, and the on-screen controller below.](assets/ps5-web-remote.png)
@@ -92,7 +95,7 @@ The [HTTP API](docs/06-http-api.md) is open for your own scripts.
 
 The server gives agents rules. Agents must stop before any purchase, pre-order or
 subscription and ask you. They must not change settings, delete games or saves,
-or accept new terms without asking.
+nor accept new terms without asking.
 
 These rules are instructions to the agent. They are not a code lock. For a hard
 stop, turn on **Require password at checkout** on the PS5. See
