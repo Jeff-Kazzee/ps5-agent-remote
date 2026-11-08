@@ -91,7 +91,7 @@ def _req(method: str, path: str, **kw) -> requests.Response:
     # Timeout first: ConnectTimeout is also a ConnectionError, but it means slow, not stopped.
     except requests.Timeout as err:
         raise RemoteDown(
-            f"The PS5 Agent Remote server at {BASE} did not answer within {timeout:g} seconds. "
+            f"The PS5 Agent Remote server at {BASE} did not answer within {timeout:g} second{'' if timeout == 1 else 's'}. "
             "Call ps5_look to see the console, or ask the user to restart start.cmd."
         ) from err
     except requests.ConnectionError as err:

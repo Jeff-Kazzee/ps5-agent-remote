@@ -148,6 +148,7 @@ class Ps5LookTest(ToolTestCase):
             with self.assertRaises(ToolError) as ctx:
                 call("ps5_look")
         self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
+        self.assertIn("is not running", str(ctx.exception))
         self.assertIn("start.cmd", str(ctx.exception))
 
 
