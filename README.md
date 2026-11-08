@@ -1,8 +1,5 @@
 # PS5 Agent Remote
 
-[![M8ven Score](https://m8ven.ai/badge/mcp/jeff-kazzee-ps5-agent-remote-4x46zm?v=0a03a4527eee34409fa622331393e13d)](https://m8ven.ai/mcp/jeff-kazzee-ps5-agent-remote-4x46zm?s=readme)
-[![M8ven Score](https://m8ven.ai/badge/mcp/jeff-kazzee/ps5-agent-remote)](https://m8ven.ai/mcp/jeff-kazzee/ps5-agent-remote?s=readme)
-
 Control your PS5 from a browser or an AI agent.
 
 ![The web remote. A live view of the PS5 home screen with Terraria selected, a PlayStation Store search with prices and owned games marked, and the on-screen controller below.](assets/ps5-web-remote.png)
@@ -48,6 +45,11 @@ Nine MCP tools, defined in [`mcp_server.py`](mcp_server.py).
 | `psn_library` | Searches your owned and played games. | Read |
 | `psn_store_search` | Searches the PlayStation Store with prices and ownership. | Read |
 | `psn_now_playing` | Shows what your account is playing now. | Read |
+
+Every tool declares the four MCP hints (`readOnlyHint`, `destructiveHint`,
+`idempotentHint`, `openWorldHint`) as explicit booleans. The input tools are
+marked destructive, because a button press can confirm any dialog on the console.
+The table is in [03 Agents](docs/03-agents.md#the-tools).
 
 `ps5_play` lets an agent play a game. The server runs the whole input list on
 its own clock, so the agent can walk, jump and aim, then read what happened from
@@ -113,7 +115,7 @@ Known limits:
 - It runs one Remote Play session at a time. The official app or chiaki-ng disconnects this one.
 - Consoles with a user login passcode are not supported yet.
 - The PIN linking step with the native library has not been tested end to end on a second PS5.
-- The repo has no automated test suite. CI builds the native library. Smoke checks are in [`tools/`](tools).
+- Unit tests cover all nine MCP tools against a fake remote server ([`tests/`](tests)). Nothing tests a real console automatically. CI builds the native library and runs the unit tests. Smoke checks that need a PS5 are in [`tools/`](tools).
 
 Not affiliated with or endorsed by Sony Interactive Entertainment. "PlayStation"
 and "PS5" are trademarks of Sony Interactive Entertainment Inc.
@@ -139,3 +141,6 @@ The native engine (`native/` sources, `tools/build_native.py` and the released
 `ps5bridge.dll`) is AGPL-3.0. It is built from chiaki-ng's libchiaki. See
 [native/LICENSE-AGPL-3.0](native/LICENSE-AGPL-3.0) and
 [THIRD_PARTY.md](THIRD_PARTY.md).
+
+[![M8ven Score](https://m8ven.ai/badge/mcp/jeff-kazzee-ps5-agent-remote-4x46zm?v=0a03a4527eee34409fa622331393e13d)](https://m8ven.ai/mcp/jeff-kazzee-ps5-agent-remote-4x46zm?s=readme)
+[![M8ven Score](https://m8ven.ai/badge/mcp/jeff-kazzee/ps5-agent-remote)](https://m8ven.ai/mcp/jeff-kazzee/ps5-agent-remote?s=readme)
