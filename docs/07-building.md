@@ -55,6 +55,18 @@ With the remote server stopped (only one Remote Play session can run):
 It connects, saves two screenshots to `native\build\`, presses Right in
 between, and prints frame stats. `luma_mean` above 0 means a real picture.
 
+## Running the unit tests
+
+The tests in `tests\` call each MCP tool by name against a fake remote server.
+They need no PS5 and no native library:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+CI runs them after the native build on every pull request, on pushes to `prod`,
+and on `v*` release tags.
+
 ## The C API
 
 `native\bridge.c` exports a small API that `ps5native.py` calls with
