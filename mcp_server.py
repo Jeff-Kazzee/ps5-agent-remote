@@ -14,6 +14,7 @@ from typing import Literal
 import requests
 from pydantic import BaseModel, Field
 from mcp.server.mcpserver import Image, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 BASE = os.environ.get("PS5_REMOTE_URL", "http://127.0.0.1:8765")
@@ -75,17 +76,23 @@ NAVIGATE = _hints(read_only=False, destructive=False, idempotent=True, open_worl
 PSN_READ = _hints(read_only=True, destructive=False, idempotent=True, open_world=True)
 
 
-class RemoteDown(RuntimeError):
-    pass
+class RemoteDown(ToolError):
+    """The local remote server is down or stuck. A ToolError, so the SDK shows the agent this text."""
 
 
 def _req(method: str, path: str, **kw) -> requests.Response:
+    timeout = kw.pop("timeout", 45)
     try:
-        return requests.request(method, BASE + path, headers=HEADERS, timeout=kw.pop("timeout", 45), **kw)
+        return requests.request(method, BASE + path, headers=HEADERS, timeout=timeout, **kw)
     except requests.ConnectionError as err:
         raise RemoteDown(
             f"The PS5 Agent Remote server is not running at {BASE}. Ask the user to start it "
             "(start.cmd in the ps5-agent-remote folder)."
+        ) from err
+    except requests.Timeout as err:
+        raise RemoteDown(
+            f"The PS5 Agent Remote server at {BASE} did not answer within {timeout:g} seconds. "
+            "Call ps5_look to see the console, or ask the user to restart start.cmd."
         ) from err
 
 

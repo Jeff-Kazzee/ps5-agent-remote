@@ -19,7 +19,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import mcp_server  # noqa: E402
-from mcp.server.mcpserver.exceptions import ToolError  # noqa: E402
+from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError  # noqa: E402
 
 JPEG = b"\xff\xd8\xff\xe0fake-jpeg"
 STATE = {"power": "on", "app": "Terraria", "linked": True}
@@ -141,11 +141,22 @@ class Ps5LookTest(ToolTestCase):
         self.assertEqual(kinds(result), ["text"])
         self.assertIn("No screenshot: PS5 is in rest mode.", texts(result)[0])
 
-    def test_ps5_look_explains_when_remote_server_is_down(self):
+    def test_ps5_look_tells_the_agent_when_remote_server_is_down(self):
+        # The SDK hides the text of any exception that is not a ToolError, so the
+        # agent would see only "Error executing tool ps5_look".
         with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ConnectionError()):
-            with self.assertRaises(mcp_server.RemoteDown) as ctx:
-                mcp_server.ps5_look()
+            with self.assertRaises(ToolError) as ctx:
+                call("ps5_look")
+        self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
         self.assertIn("start.cmd", str(ctx.exception))
+
+
+    def test_ps5_look_tells_the_agent_when_remote_server_times_out(self):
+        with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ReadTimeout()):
+            with self.assertRaises(ToolError) as ctx:
+                call("ps5_look")
+        self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
+        self.assertIn("did not answer within 45 seconds", str(ctx.exception))
 
 
 class Ps5PlayTest(ToolTestCase):
