@@ -27,11 +27,11 @@ STATE = {"power": "on", "app": "Terraria", "linked": True}
 # Expected hints per tool: readOnly, destructive, idempotent, openWorld.
 EXPECTED_HINTS = {
     "ps5_look": (True, False, True, False),
-    "ps5_play": (False, True, False, False),
-    "ps5_press": (False, True, False, False),
-    "ps5_type": (False, True, False, False),
+    "ps5_play": (False, True, False, True),
+    "ps5_press": (False, True, False, True),
+    "ps5_type": (False, True, False, True),
     "ps5_home": (False, False, True, False),
-    "ps5_power": (False, False, True, False),
+    "ps5_power": (False, True, True, False),
     "psn_now_playing": (True, False, True, True),
     "psn_library": (True, False, True, True),
     "psn_store_search": (True, False, True, True),

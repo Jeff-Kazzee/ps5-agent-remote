@@ -48,7 +48,8 @@ Nine MCP tools, defined in [`mcp_server.py`](mcp_server.py).
 
 Every tool declares the four MCP hints (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) as explicit booleans. The input tools are
-marked destructive, because a button press can confirm any dialog on the console.
+marked destructive and open world, because a button press can confirm any dialog
+on the console, a store purchase included.
 The table is in [03 Agents](docs/03-agents.md#the-tools).
 
 `ps5_play` lets an agent play a game. The server runs the whole input list on

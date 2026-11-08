@@ -69,10 +69,13 @@ def _hints(*, read_only: bool, destructive: bool, idempotent: bool, open_world: 
 
 
 # Watching the screen changes nothing. Controller input can confirm any dialog on the console,
-# including a delete, so the input tools are destructive. PSN tools read Sony's web services.
+# a delete or a store purchase included, and can send text to other players, so the input tools
+# are destructive and open world. Rest mode ends any online match, so power is destructive.
+# PSN tools read Sony's web services.
 LOOK = _hints(read_only=True, destructive=False, idempotent=True, open_world=False)
-INPUT = _hints(read_only=False, destructive=True, idempotent=False, open_world=False)
+INPUT = _hints(read_only=False, destructive=True, idempotent=False, open_world=True)
 NAVIGATE = _hints(read_only=False, destructive=False, idempotent=True, open_world=False)
+POWER = _hints(read_only=False, destructive=True, idempotent=True, open_world=False)
 PSN_READ = _hints(read_only=True, destructive=False, idempotent=True, open_world=True)
 
 
@@ -243,7 +246,7 @@ def ps5_home() -> list:
     return _look()
 
 
-@mcp.tool(annotations=NAVIGATE)
+@mcp.tool(annotations=POWER)
 def ps5_power(state: Literal["on", "rest"]) -> str:
     """Wake the PS5 from rest mode, or put it into rest mode. Waking takes about 20 seconds."""
     res = _json("POST", f"/api/action/{'wake' if state == 'on' else 'rest'}")
