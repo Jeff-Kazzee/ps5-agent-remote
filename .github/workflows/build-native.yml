@@ -38,6 +38,9 @@ jobs:
           python -m pip install -r requirements.txt
           python -c "import ps5native; ps5native.dll(); import server, mcp_server; print('imports ok')"
 
+      - name: Run the unit tests
+        run: python -m unittest discover -s tests -v
+
       - name: Hash
         shell: pwsh
         run: |

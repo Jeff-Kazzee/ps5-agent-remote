@@ -14,6 +14,7 @@ from typing import Literal
 import requests
 from pydantic import BaseModel, Field
 from mcp.server.mcpserver import Image, MCPServer
+from mcp.types import ToolAnnotations
 
 BASE = os.environ.get("PS5_REMOTE_URL", "http://127.0.0.1:8765")
 HEADERS = {"X-Client": "agent"}
@@ -54,6 +55,24 @@ owns, or of a free game they asked for, is allowed.\
 """
 
 mcp = MCPServer("ps5", instructions=INSTRUCTIONS)
+
+
+def _hints(*, read_only: bool, destructive: bool, idempotent: bool, open_world: bool) -> ToolAnnotations:
+    """All four MCP tool hints, always explicit, so clients never fall back to the spec defaults."""
+    return ToolAnnotations(
+        read_only_hint=read_only,
+        destructive_hint=destructive,
+        idempotent_hint=idempotent,
+        open_world_hint=open_world,
+    )
+
+
+# Watching the screen changes nothing. Controller input can confirm any dialog on the console,
+# including a delete, so the input tools are destructive. PSN tools read Sony's web services.
+LOOK = _hints(read_only=True, destructive=False, idempotent=True, open_world=False)
+INPUT = _hints(read_only=False, destructive=True, idempotent=False, open_world=False)
+NAVIGATE = _hints(read_only=False, destructive=False, idempotent=True, open_world=False)
+PSN_READ = _hints(read_only=True, destructive=False, idempotent=True, open_world=True)
 
 
 class RemoteDown(RuntimeError):
@@ -122,7 +141,7 @@ class Step(BaseModel):
     ms: int = Field(200, description="Duration, 0 to 10000.")
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOOK)
 def ps5_look(width: int = 1280, enhance: bool = False, zoom: list[float] | None = None) -> list:
     """Screenshot the PS5 screen with a one-line status (power, running app, keyboard state).
 
@@ -134,7 +153,7 @@ def ps5_look(width: int = 1280, enhance: bool = False, zoom: list[float] | None 
     return _look(max(480, min(1920, width)), enhance, zoom)
 
 
-@mcp.tool()
+@mcp.tool(annotations=INPUT)
 def ps5_play(steps: list[Step], frames: int = 4, enhance: bool = False, width: int = 960) -> list:
     """Run timed controller input for games, and return frames captured while it runs.
 
@@ -165,7 +184,7 @@ def ps5_play(steps: list[Step], frames: int = 4, enhance: bool = False, width: i
     return out
 
 
-@mcp.tool()
+@mcp.tool(annotations=INPUT)
 def ps5_press(
     buttons: list[Button],
     hold_ms: int = 100,
@@ -189,7 +208,7 @@ def ps5_press(
     return _look()
 
 
-@mcp.tool()
+@mcp.tool(annotations=INPUT)
 def ps5_type(text: str, submit: bool = True) -> list:
     """Type into the PS5 on-screen keyboard and return a screenshot. A text field must already be selected.
 
@@ -207,7 +226,7 @@ def ps5_type(text: str, submit: bool = True) -> list:
     return out
 
 
-@mcp.tool()
+@mcp.tool(annotations=NAVIGATE)
 def ps5_home() -> list:
     """Go to the PS5 Home screen and return a screenshot."""
     res = _json("POST", "/api/action/home")
@@ -217,20 +236,20 @@ def ps5_home() -> list:
     return _look()
 
 
-@mcp.tool()
+@mcp.tool(annotations=NAVIGATE)
 def ps5_power(state: Literal["on", "rest"]) -> str:
     """Wake the PS5 from rest mode, or put it into rest mode. Waking takes about 20 seconds."""
     res = _json("POST", f"/api/action/{'wake' if state == 'on' else 'rest'}")
     return "OK. " + _status_line(res.get("state", {})) if res.get("ok") else f"Failed: {res.get('error')}"
 
 
-@mcp.tool()
+@mcp.tool(annotations=PSN_READ)
 def psn_now_playing() -> dict:
     """What the user's PlayStation Network account is doing now: online status, platform, and current game."""
     return _json("GET", "/api/psn/presence")
 
 
-@mcp.tool()
+@mcp.tool(annotations=PSN_READ)
 def psn_library(query: str = "", limit: int = 25, refresh: bool = False) -> dict:
     """Search the user's game library: games they own plus titles they have played, newest played first.
 
@@ -242,7 +261,7 @@ def psn_library(query: str = "", limit: int = 25, refresh: bool = False) -> dict
     return _json("GET", "/api/psn/library", params={"q": query, "limit": limit, "refresh": "1" if refresh else "0"}, timeout=120)
 
 
-@mcp.tool()
+@mcp.tool(annotations=PSN_READ)
 def psn_store_search(query: str, limit: int = 10) -> dict:
     """Search the PlayStation Store for full games. Returns name, platforms, price, deals, and whether the user owns it.
 
