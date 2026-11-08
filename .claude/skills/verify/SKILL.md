@@ -61,9 +61,10 @@ receipt first. The probe stops the server it started. Kill nothing else.
 
 The headless part never touches a console, Remote Play, PSN or the browser
 page. A diff limited to `mcp_server.py`, `tests/`, `docs/`, `README.md`,
-`.gitignore` or this skill's folder needs only part 1. So does a workflow change that
-only edits comments or test steps and leaves the build and release steps alone. Any
-other file, such as
+`.gitignore` or this skill's folder needs only part 1. So does a workflow change
+that only edits comments or adds or edits a step that runs `tests/`, and leaves the
+build, hash and release steps alone. A receipt that claims this quotes the workflow
+diff. Any other file, such as
 `server.py`, `web/`, `native/`, `tools/`, `.github/` or `requirements.txt`, also
 needs this list. Hand it to Jeff with the `manual-acceptance` skill.
 

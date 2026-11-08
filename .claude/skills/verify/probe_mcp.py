@@ -43,15 +43,18 @@ def check_routes(checkout: Path) -> None:
         r"""_(?:req|json)\(["'](GET|POST)["'], f?(?:"([^"]+)"|'([^']+)')""", client)]
     # Every call site except the definitions and _json's own pass-through must parse,
     # so a path held in a variable or a new quoting style fails instead of being skipped.
-    sites = re.findall(r"(?<!def )\b_(?:req|json)\((?!method\b)", client)
-    check(bool(routes) and len(calls) == len(sites), "route table read",
+    # _json passes its own arguments on as `_req(method, path`. A keyword call such as
+    # `_req(method="GET"` is a real call site and still counts.
+    sites = re.findall(r"(?<!def )\b_(?:req|json)\((?!method\s*,)", client)
+    check(bool(routes) and bool(calls) and len(calls) == len(sites), "route table read",
           f"{len(routes)} routes, {len(calls)} of {len(sites)} call sites parsed")
     for method, path in calls:
         concrete = re.sub(r"\{[^}]*\}", "x", path)
         ok = any(m == method and rx.match(concrete) for m, rx in routes)
         check(ok, f"route {method} {path}")
     # /api/action/{name} matches any name, so check each name against the handler's branches.
-    handled = set(re.findall(r"""name == ["'](\w+)["']""", server))
+    handler = re.search(r"async def action\(.*?(?=\n(?:async )?def |\Z)", server, re.S)
+    handled = set(re.findall(r"""name == ["'](\w+)["']""", handler.group(0) if handler else ""))
     for _, path in calls:
         if path.startswith("/api/action/"):
             tail = path[len("/api/action/"):]
