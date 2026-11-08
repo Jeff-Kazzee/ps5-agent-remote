@@ -148,6 +148,7 @@ class Ps5LookTest(ToolTestCase):
             with self.assertRaises(ToolError) as ctx:
                 call("ps5_look")
         self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
+        self.assertIn("is not running", str(ctx.exception))
         self.assertIn("start.cmd", str(ctx.exception))
 
 
@@ -156,6 +157,15 @@ class Ps5LookTest(ToolTestCase):
             with self.assertRaises(ToolError) as ctx:
                 call("ps5_look")
         self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
+        self.assertIn("did not answer within 45 seconds", str(ctx.exception))
+
+
+    def test_ps5_look_reports_a_connect_timeout_as_a_timeout(self):
+        # ConnectTimeout is both a ConnectionError and a Timeout. It means the server was
+        # not reached in time, not that it is stopped.
+        with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ConnectTimeout()):
+            with self.assertRaises(ToolError) as ctx:
+                call("ps5_look")
         self.assertIn("did not answer within 45 seconds", str(ctx.exception))
 
 
