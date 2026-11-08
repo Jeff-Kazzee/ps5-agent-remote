@@ -38,13 +38,26 @@ def check_routes(checkout: Path) -> None:
     server = (checkout / "server.py").read_text(encoding="utf-8")
     client = (checkout / "mcp_server.py").read_text(encoding="utf-8")
     routes = [(m.upper(), re.compile("^" + re.sub(r"\\{[^/]+\\}", "[^/]+", re.escape(path)) + "$"))
-              for m, path in re.findall(r'web\.(get|post)\("([^"]+)"', server)]
-    calls = re.findall(r'_(?:req|json)\("(GET|POST)", f?"([^"]+)"', client)
-    check(bool(routes) and bool(calls), "route table read", f"{len(routes)} routes, {len(calls)} calls")
+              for m, path in re.findall(r"""web\.(get|post)\(["']([^"']+)["']""", server)]
+    calls = [(m, a or b) for m, a, b in re.findall(
+        r"""_(?:req|json)\(["'](GET|POST)["'], f?(?:"([^"]+)"|'([^']+)')""", client)]
+    # Every call site except the definitions and _json's own pass-through must parse,
+    # so a path held in a variable or a new quoting style fails instead of being skipped.
+    sites = re.findall(r"(?<!def )\b_(?:req|json)\((?!method\b)", client)
+    check(bool(routes) and len(calls) == len(sites), "route table read",
+          f"{len(routes)} routes, {len(calls)} of {len(sites)} call sites parsed")
     for method, path in calls:
         concrete = re.sub(r"\{[^}]*\}", "x", path)
         ok = any(m == method and rx.match(concrete) for m, rx in routes)
         check(ok, f"route {method} {path}")
+    # /api/action/{name} matches any name, so check each name against the handler's branches.
+    handled = set(re.findall(r"""name == ["'](\w+)["']""", server))
+    for _, path in calls:
+        if path.startswith("/api/action/"):
+            tail = path[len("/api/action/"):]
+            # Literals compared with == are conditions, not action names.
+            for name in re.findall(r"""(?<!== )["'](\w+)["']""", tail) or [tail]:
+                check(name in handled, f"action {name}", f"handled: {sorted(handled)}")
 
 
 def main() -> int:
