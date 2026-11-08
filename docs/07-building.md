@@ -64,7 +64,8 @@ They need no PS5 and no native library:
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-CI runs them after the native build on every pull request and on pushes to `prod`.
+CI runs them after the native build on every pull request, on pushes to `prod`,
+and on `v*` release tags.
 
 ## The C API
 

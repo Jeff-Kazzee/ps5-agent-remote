@@ -1,6 +1,7 @@
 name: build-native
 
-# Builds native/ps5bridge.dll from source on every push and pull request.
+# Builds native/ps5bridge.dll from source and runs the unit tests on every pull
+# request and on pushes to prod.
 # On a v* tag it also publishes the DLL and its SHA-256 as a GitHub release.
 
 on:
