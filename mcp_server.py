@@ -68,11 +68,12 @@ def _hints(*, read_only: bool, destructive: bool, idempotent: bool, open_world: 
     )
 
 
-# Watching the screen changes nothing. Controller input can confirm any dialog on the console,
+# Watching the screen changes nothing, but it can show other players' chat and web pages,
+# so ps5_look is open world. Controller input can confirm any dialog on the console,
 # a delete or a store purchase included, and can send text to other players, so the input tools
 # are destructive and open world. Rest mode ends any online match, so power is destructive.
 # PSN tools read Sony's web services.
-LOOK = _hints(read_only=True, destructive=False, idempotent=True, open_world=False)
+LOOK = _hints(read_only=True, destructive=False, idempotent=True, open_world=True)
 INPUT = _hints(read_only=False, destructive=True, idempotent=False, open_world=True)
 NAVIGATE = _hints(read_only=False, destructive=False, idempotent=True, open_world=False)
 POWER = _hints(read_only=False, destructive=True, idempotent=True, open_world=False)
