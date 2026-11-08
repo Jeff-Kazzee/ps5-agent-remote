@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
@@ -28,22 +29,48 @@ def check(ok: bool, label: str, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'} {label}" + (f": {detail}" if detail else ""), flush=True)
 
 
+def check_routes(checkout: Path) -> None:
+    """Every path mcp_server.py calls must exist in server.py's routes.
+
+    The unit tests fake the remote server with their own routes, so a path renamed in
+    both mcp_server.py and the tests would pass them. This reads the real route table.
+    """
+    server = (checkout / "server.py").read_text(encoding="utf-8")
+    client = (checkout / "mcp_server.py").read_text(encoding="utf-8")
+    routes = [(m.upper(), re.compile("^" + re.sub(r"\\{[^/]+\\}", "[^/]+", re.escape(path)) + "$"))
+              for m, path in re.findall(r'web\.(get|post)\("([^"]+)"', server)]
+    calls = re.findall(r'_(?:req|json)\("(GET|POST)", f?"([^"]+)"', client)
+    check(bool(routes) and bool(calls), "route table read", f"{len(routes)} routes, {len(calls)} calls")
+    for method, path in calls:
+        concrete = re.sub(r"\{[^}]*\}", "x", path)
+        ok = any(m == method and rx.match(concrete) for m, rx in routes)
+        check(ok, f"route {method} {path}")
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
         return 2
     checkout = Path(sys.argv[1]).resolve()
+    check_routes(checkout)
     python = sys.argv[2] if len(sys.argv) > 2 else sys.executable
     # Port 1 is closed on any normal host, so every remote call fails to connect.
     env = dict(os.environ, PS5_REMOTE_URL="http://127.0.0.1:1")
     proc = subprocess.Popen([python, "mcp_server.py"], cwd=checkout, env=env, text=True,
-                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     lines: queue.Queue[str] = queue.Queue()
+    errors: list[str] = []
+
     def pump() -> None:
         for line in proc.stdout:
             lines.put(line)
 
+    def pump_errors() -> None:
+        for line in proc.stderr:
+            errors.append(line.rstrip())
+
     threading.Thread(target=pump, daemon=True).start()
+    threading.Thread(target=pump_errors, daemon=True).start()
 
     def send(msg: dict) -> None:
         proc.stdin.write(json.dumps(msg) + "\n")
@@ -77,12 +104,21 @@ def main() -> int:
         res = reply(3).get("result", {})
         text = " ".join(c.get("text", "") for c in res.get("content", []))
         check(res.get("isError") is True and "start.cmd" in text, "ps5_look without server", text[:160])
-    except queue.Empty:
-        check(False, "server answered", f"no reply within {TIMEOUT_S} s, exit code {proc.poll()}")
+    except (queue.Empty, OSError, ValueError, KeyError) as err:
+        check(False, "server answered", f"{type(err).__name__} {err}, exit code {proc.poll()}")
+        for line in errors[-10:]:
+            print(f"  server stderr: {line}")
     finally:
-        proc.stdin.close()
+        try:
+            proc.stdin.close()
+        except OSError:
+            pass
         proc.terminate()
-        proc.wait(timeout=10)
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=10)
     print(f"RESULT {'PASS' if failures == 0 else 'FAIL'} ({failures} failed)")
     return 0 if failures == 0 else 1
 

@@ -20,14 +20,16 @@ pass and the probe prints `RESULT PASS`. At 1e9650f the probe fails 10 checks.
 
 ## 1. Headless checks (any Linux host)
 
-Run on Daytona or `ssh linveo-16gb`. Set `PY` to a Python 3.11 or newer with
-the `venv` module. linveo has no system pip, so there use
+Run on Daytona or `ssh linveo-16gb`. `PY` is a Python 3.11 or newer with the
+`venv` module. Daytona's `python3` works. linveo has no system pip, so there set
 `PY=/home/jeff/.hermes/tools/python-3.14.9+20261021-linux-x64/bin/python3`.
-`PROBE` is this folder's `probe_mcp.py`. Copy it to the host first if the head
-under test does not contain it.
+If the head under test has no `.claude/skills/verify/probe_mcp.py`, copy this
+folder's copy to `/tmp/probe_mcp.py` and set `PROBE=/tmp/probe_mcp.py`.
 
 ```sh
-SHA=<head sha>; W=/tmp/ps5vs; PY=python3; PROBE="$W/repo/.claude/skills/verify/probe_mcp.py"
+set -e
+SHA=<head sha>; W=/tmp/ps5vs; PY="${PY:-python3}"; PROBE="${PROBE:-$W/repo/.claude/skills/verify/probe_mcp.py}"
+rm -rf "$W"
 git clone -q https://github.com/Jeff-Kazzee/ps5-agent-remote.git "$W/repo"
 git -C "$W/repo" fetch -q origin "$SHA" && git -C "$W/repo" checkout -q "$SHA"
 git -C "$W/repo" rev-parse HEAD            # must equal $SHA
@@ -42,8 +44,11 @@ Pass means:
 - `git rev-parse HEAD` equals the SHA under test.
 - `pip install` exits 0. If a package has no wheel for the interpreter, record
   the package and stop. Do not install a subset.
-- unittest ends with `OK` and runs every test in `tests/`.
-- The probe prints `RESULT PASS`. It starts `python mcp_server.py` with
+- unittest ends with `OK` and its `Ran N tests` line counts every test in
+  `tests/`. At 403c396 that is 24.
+- The probe prints `RESULT PASS`. It first checks that every path
+  `mcp_server.py` calls exists in `server.py`'s route table, because the unit
+  tests fake the server with their own routes. Then it starts `python mcp_server.py` with
   `PS5_REMOTE_URL=http://127.0.0.1:1`, sends `initialize`,
   `notifications/initialized` and `tools/list`, checks the 9 tool names and
   that each tool sends all four hints as booleans, then calls `ps5_look` and
@@ -55,10 +60,10 @@ receipt first. The probe stops the server it started. Kill nothing else.
 ## 2. Manual acceptance (Jeff's Windows PC and PS5)
 
 The headless part never touches a console, Remote Play, PSN or the browser
-page. Hand Jeff this list (see the `manual-acceptance` skill) when the diff
-touches `server.py`, `web/`, `native/`, `ps5native.py`, `ddp.py`, `psn.py`,
-`store.py`, `start.cmd`, `tools/build_native.py` or `requirements.txt`. A diff
-limited to `mcp_server.py`, `tests/` or docs needs only part 1.
+page. A diff limited to `mcp_server.py`, `tests/`, `docs/`, `README.md`,
+`.gitignore` or this skill's folder needs only part 1. Any other file, such as
+`server.py`, `web/`, `native/`, `tools/`, `.github/` or `requirements.txt`, also
+needs this list. Hand it to Jeff with the `manual-acceptance` skill.
 
 1. Double-click `start.cmd`. The console prints
    `PS5 Agent Remote: http://127.0.0.1:8765` and the browser opens the page.
@@ -74,8 +79,9 @@ limited to `mcp_server.py`, `tests/` or docs needs only part 1.
    `docs/07-building.md`.
 6. For sign-in or linking changes, repeat the NPSSO and PIN steps in
    `docs/02-ps5-setup.md`.
-7. Through an agent, with the server running: `ps5_power` rest then on,
-   `psn_now_playing`, `psn_store_search`, and a one-second `ps5_play`. Then
+7. Through an agent, with the server running: `ps5_press` with one `RIGHT`,
+   `ps5_type` into a selected search field, `ps5_home`, `ps5_power` rest then
+   on, `psn_now_playing`, `psn_store_search`, and a one-second `ps5_play`. Then
    open `/api/debug` in the browser and call `/api/action/disconnect` and
    `/api/action/connect` as `docs/06-http-api.md` shows. Each answers without
    an error.
