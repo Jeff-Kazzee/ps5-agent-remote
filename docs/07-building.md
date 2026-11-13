@@ -7,14 +7,22 @@ The build uses [zig](https://ziglang.org) as the C compiler, installed as a
 Python package, so you don't need Visual Studio, MSYS2 or CMake. Nothing is
 installed system-wide.
 
+Last verified: 2026-11-13 against the Python 3.12.16 package metadata and build script. Windows execution remains unverified.
+
 ## Steps
 
-From the project folder in PowerShell:
+First get the project-local Python 3.12.16 from the
+[install guide](01-install.md#12-get-patched-python). From the project folder
+in PowerShell:
 
 ```powershell
 git clone --depth 1 --branch v1.10.0 --recurse-submodules --shallow-submodules https://github.com/streetpea/chiaki-ng.git vendor\chiaki-ng-src
-py -3.12 -m venv .buildenv
+.python\python\python.exe -m venv --clear .buildenv
+if ($LASTEXITCODE -ne 0) { throw "Build environment creation failed" }
 .buildenv\Scripts\python.exe -m pip install ziglang "protobuf>=4,<6" grpcio-tools requests
+if ($LASTEXITCODE -ne 0) { throw "Build dependency installation failed" }
+.buildenv\Scripts\python.exe -m pip check
+if ($LASTEXITCODE -ne 0) { throw "Build dependency compatibility check failed" }
 .buildenv\Scripts\python.exe tools\build_native.py
 ```
 

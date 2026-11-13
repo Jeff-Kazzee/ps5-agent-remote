@@ -1,31 +1,13 @@
 # 1. Install
 
-This takes about 10 minutes. Everything goes into one folder. Nothing is
-installed system-wide except Python.
+This takes about 10 minutes. Python and the project packages stay in the
+project folder.
 
-## 1.1 Install Python
+Last verified: 2026-11-13 against the Python 3.12.16 release and Windows package metadata. Windows execution remains unverified.
 
-You need Python 3.11 or newer.
+## 1.1 Download PS5 Agent Remote
 
-1. Open **PowerShell** (press Start, type `powershell`, press Enter).
-2. Check whether Python is already there:
-
-   ```powershell
-   py --version
-   ```
-
-   If it prints `Python 3.11` or higher, skip to 1.2.
-3. Otherwise install it with winget:
-
-   ```powershell
-   winget install Python.Python.3.12
-   ```
-
-   Or download it from https://www.python.org/downloads/windows/. In the
-   installer, tick **Add python.exe to PATH**.
-4. Close and reopen PowerShell, then run `py --version` again.
-
-## 1.2 Download PS5 Agent Remote
+Open **PowerShell** (press Start, type `powershell`, press Enter).
 
 **With Git:**
 
@@ -41,17 +23,49 @@ Extract it to a folder you will keep, for example
 
 All commands below run from inside this folder.
 
+## 1.2 Get patched Python
+
+Use Python 3.12.16. The official Windows installers for 3.12 stop at
+3.12.10, which lacks later security fixes. This project uses
+[Astral's maintained Python 3.12.16 build](https://github.com/astral-sh/python-build-standalone/releases/tag/20261110)
+for Windows x64. It keeps the existing Python 3.12 package compatibility.
+See [Python's security release notes](https://www.python.org/downloads/release/python-31216/).
+
+Paste this block into PowerShell. It checks the release's SHA-256 before
+extracting Python into `.python`. It leaves your system Python alone.
+
+```powershell
+$ErrorActionPreference = "Stop"
+if (Test-Path .python) { throw "The .python folder already exists. See Updating below." }
+$archive = Join-Path $env:TEMP "ps5-cpython-3.12.16.tar.gz"
+Invoke-WebRequest -Uri "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.12.16%2B20261110-x86_64-pc-windows-msvc-install_only.tar.gz" -OutFile $archive
+$expected = "e23fe5b16926de1d81661b1a97352e89fb167549c55a6825796ccd0f32ec7f1b"
+if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+    throw "Python archive SHA-256 mismatch"
+}
+New-Item -ItemType Directory -Path .python | Out-Null
+tar -xzf $archive -C .python
+if ($LASTEXITCODE -ne 0) { throw "Python archive extraction failed" }
+.python\python\python.exe -c "import sys, struct; assert sys.version_info[:3] == (3, 12, 16); assert struct.calcsize('P') == 8; print(sys.executable, sys.version)"
+if ($LASTEXITCODE -ne 0) { throw "Python runtime verification failed" }
+Remove-Item -LiteralPath $archive
+```
+
 ## 1.3 Install the Python packages
 
 ```powershell
-py -3.12 -m venv .venv
+.python\python\python.exe -m venv --clear .venv
+if ($LASTEXITCODE -ne 0) { throw "Virtual environment creation failed" }
 .venv\Scripts\python.exe -m pip install --upgrade pip
+if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed" }
 .venv\Scripts\python.exe -m pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw "Application dependency installation failed" }
+.venv\Scripts\python.exe -m pip check
 ```
 
-This creates a private Python environment in `.venv` and installs the
-packages into it. If `py -3.12` says the version isn't installed, use the
-version you have, for example `py -3.11`.
+This recreates the private Python environment in `.venv` with the patched
+interpreter and installs the packages into it. Updating pip alone does not
+update the Python interpreter.
 
 ## 1.4 Get the native library
 
@@ -93,10 +107,25 @@ Next: [2. PS5 setup](02-ps5-setup.md)
 
 ## Updating
 
+Stop the remote before updating. Pull the project changes, then check the
+interpreter used by the existing environment:
+
 ```powershell
 git pull
-.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe --version
 ```
+
+For an older environment, repeat sections 1.2 and 1.3 to install Python
+3.12.16 and recreate `.venv`. If `.python` already exists and holds an older
+runtime, rename it to an unused backup name before section 1.2, for example
+`Rename-Item .python .python-previous`. Keep the backup until the new setup
+works. Do not copy the old virtual environment into the new one.
+Recreate an existing `.buildenv` with the [build steps](07-building.md) too.
+Keep `.env.local` and the console credentials in `$HOME\.ps5-remote`.
+
+If the environment already reports Python 3.12.16, update its packages with
+`.venv\Scripts\python.exe -m pip install -r requirements.txt` and run
+`.venv\Scripts\python.exe -m pip check`.
 
 Then download the `ps5bridge.dll` from the newest release again if the
 release notes say it changed.
