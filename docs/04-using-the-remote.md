@@ -1,5 +1,7 @@
 # 4. Using the remote
 
+Last reviewed: 2026-11-14 against `496da9ff39f6` for the page controls, shortcuts and configuration defaults. Windows and live console behavior remain unverified.
+
 Start the server with `start.cmd` and open http://127.0.0.1:8765.
 
 ## The page
