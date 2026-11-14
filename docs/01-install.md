@@ -69,6 +69,7 @@ if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed" }
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw "Application dependency installation failed" }
 .venv\Scripts\python.exe -m pip check
+if ($LASTEXITCODE -ne 0) { throw "Dependency compatibility check failed" }
 ```
 
 This recreates the private Python environment in `.venv` with the patched
