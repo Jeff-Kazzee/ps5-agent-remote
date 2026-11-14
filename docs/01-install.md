@@ -3,7 +3,7 @@
 This takes about 10 minutes. Python and the project packages stay in the
 project folder.
 
-Last verified: 2026-11-13 against the Python 3.12.16 release and Windows package metadata. Windows execution remains unverified.
+Last verified: 2026-11-14 against the Python 3.12.16 release and upgrade instructions. Windows execution remains unverified.
 
 ## 1.1 Download PS5 Agent Remote
 
@@ -33,6 +33,9 @@ See [Python's security release notes](https://www.python.org/downloads/release/p
 
 Paste this block into PowerShell. It checks the release's SHA-256 before
 extracting Python into `.python`. It leaves your system Python alone.
+If `.python` already exists, follow [Updating](#updating) first. A completed,
+verified installation can be reused. An older or incomplete installation
+must be moved aside before retrying this download.
 
 ```powershell
 $ErrorActionPreference = "Stop"
@@ -52,6 +55,11 @@ Remove-Item -LiteralPath $archive
 ```
 
 ## 1.3 Install the Python packages
+
+Before recreating an existing `.venv`, stop the remote and stop or disable
+the PS5 MCP server in each connected agent app. The MCP server is a separate
+Python process and can keep files open after the remote stops. Keep those
+connections disabled until this section completes, then restart them.
 
 ```powershell
 .python\python\python.exe -m venv --clear .venv
@@ -107,25 +115,50 @@ Next: [2. PS5 setup](02-ps5-setup.md)
 
 ## Updating
 
-Stop the remote before updating. Pull the project changes, then check the
-interpreter used by the existing environment:
+Stop the remote and stop or disable its PS5 MCP connection in every agent
+app before updating. Closing `start.cmd` does not stop an agent's stdio MCP
+process. If an app has no server-stop control, close that app for the update.
+Pull the project changes, then check the existing environment:
 
 ```powershell
 git pull
 .venv\Scripts\python.exe --version
 ```
 
-For an older environment, repeat sections 1.2 and 1.3 to install Python
-3.12.16 and recreate `.venv`. If `.python` already exists and holds an older
-runtime, rename it to an unused backup name before section 1.2, for example
-`Rename-Item .python .python-previous`. Keep the backup until the new setup
-works. Do not copy the old virtual environment into the new one.
+For an older or incomplete `.venv`, first choose the matching runtime step:
+
+- If `.python` is absent, complete section 1.2, then section 1.3.
+- If section 1.2 previously completed successfully with its archive hash
+  check, verify that runtime with the block below. When it passes, skip the
+  download in section 1.2 and go directly to section 1.3. This also resumes
+  an update interrupted after installing Python but before recreating `.venv`.
+- If extraction was interrupted, a runtime check fails, or the runtime's
+  origin is uncertain, preserve `.python` under an unused backup name,
+  for example `Rename-Item .python .python-previous`. Repeat section 1.2
+  into a new `.python` folder, then section 1.3. Do not extract over the
+  existing folder or disable its hash check.
+
+Only run this check for a runtime installed from the verified archive in
+section 1.2:
+
+```powershell
+$ErrorActionPreference = "Stop"
+.python\python\python.exe -c "import sys, struct, ssl, venv, ensurepip; assert sys.version_info[:3] == (3, 12, 16); assert struct.calcsize('P') == 8; print(sys.executable, sys.version)"
+if ($LASTEXITCODE -ne 0) { throw "Runtime check failed. Preserve .python under an unused backup name and repeat section 1.2." }
+```
+
+Keep the backup until the new setup works. Do not copy the old virtual
+environment into the new one. If `.venv` is missing or its version check
+fails after an interrupted update, use the same runtime choices above and
+rerun section 1.3.
 Recreate an existing `.buildenv` with the [build steps](07-building.md) too.
 Keep `.env.local` and the console credentials in `$HOME\.ps5-remote`.
 
 If the environment already reports Python 3.12.16, update its packages with
 `.venv\Scripts\python.exe -m pip install -r requirements.txt` and run
 `.venv\Scripts\python.exe -m pip check`.
+Once the update succeeds, restart the remote and re-enable its PS5 MCP
+connections in your agent apps.
 
 Then download the `ps5bridge.dll` from the newest release again if the
 release notes say it changed.
