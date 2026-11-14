@@ -14,6 +14,7 @@ Open **PowerShell** (press Start, type `powershell`, press Enter).
 ```powershell
 cd $HOME
 git clone https://github.com/Jeff-Kazzee/ps5-agent-remote.git
+if ($LASTEXITCODE -ne 0) { throw "Project clone failed. Inspect the existing folder before continuing." }
 cd ps5-agent-remote
 ```
 
@@ -123,6 +124,7 @@ Pull the project changes, then check the existing environment:
 
 ```powershell
 git pull
+if ($LASTEXITCODE -ne 0) { throw "Project update failed. Resolve the Git error before continuing." }
 .venv\Scripts\python.exe --version
 ```
 
