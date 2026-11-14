@@ -143,7 +143,7 @@ section 1.2:
 
 ```powershell
 $ErrorActionPreference = "Stop"
-.python\python\python.exe -c "import sys, struct, ssl, venv, ensurepip; assert sys.version_info[:3] == (3, 12, 16); assert struct.calcsize('P') == 8; print(sys.executable, sys.version)"
+.python\python\python.exe -c "import sys, struct, ssl, venv, ensurepip; print(sys.executable, sys.version); sys.exit(0 if sys.version_info[:3] == (3, 12, 16) and struct.calcsize('P') == 8 else 'Expected x64 Python 3.12.16')"
 if ($LASTEXITCODE -ne 0) { throw "Runtime check failed. Preserve .python under an unused backup name and repeat section 1.2." }
 ```
 
@@ -154,11 +154,24 @@ rerun section 1.3.
 Recreate an existing `.buildenv` with the [build steps](07-building.md) too.
 Keep `.env.local` and the console credentials in `$HOME\.ps5-remote`.
 
-If the environment already reports Python 3.12.16, update its packages with
-`.venv\Scripts\python.exe -m pip install -r requirements.txt` and run
-`.venv\Scripts\python.exe -m pip check`.
-Once the update succeeds, restart the remote and re-enable its PS5 MCP
-connections in your agent apps.
+If `.venv` already reports Python 3.12.16, still verify the trusted runtime
+above first. If `.python` is absent, older, incomplete or unverified, use
+the matching runtime step above and recreate `.venv` with section 1.3.
+Otherwise confirm that `.venv` uses that exact x64 base interpreter before
+updating its packages:
 
-Then download the `ps5bridge.dll` from the newest release again if the
-release notes say it changed.
+```powershell
+$ErrorActionPreference = "Stop"
+.venv\Scripts\python.exe -c "import os, sys, struct; valid = sys.version_info[:3] == (3, 12, 16) and struct.calcsize('P') == 8 and os.path.samefile(sys.base_prefix, os.path.abspath('.python/python')); print(sys.executable, sys.base_prefix); sys.exit(0 if valid else 'Expected the verified project-local x64 Python 3.12.16')"
+if ($LASTEXITCODE -ne 0) { throw "Environment check failed. Recreate .venv with section 1.3 before continuing." }
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw "Application dependency installation failed" }
+.venv\Scripts\python.exe -m pip check
+if ($LASTEXITCODE -ne 0) { throw "Dependency compatibility check failed" }
+```
+
+While the remote and MCP connections are still stopped, replace
+`ps5bridge.dll` if the newest release notes say it changed. Verify its
+SHA-256 as section 1.4 describes before starting anything that loads it.
+Once the environment and native library updates succeed, restart the
+remote and re-enable its PS5 MCP connections in your agent apps.
