@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -11,6 +12,14 @@ import unittest
 
 REPO = Path(os.environ.get("PS5_LAZY_IMPORT_REPO", Path(__file__).resolve().parents[1])).resolve()
 DEPENDENCIES = ("requests", "urllib3", "psnawp_api")
+IMPORT_SOURCES = ("psn.py", "server.py", "mcp_server.py", "ddp.py", "store.py", "ps5native.py")
+
+
+def copy_import_sources(source: Path, destination: Path) -> None:
+    """Copy only import inputs, never the checkout's local configuration or stores."""
+    destination.mkdir()
+    for name in IMPORT_SOURCES:
+        shutil.copyfile(source / name, destination / name)
 
 
 def child(mode: str, module: str, profile: Path) -> dict:
@@ -173,16 +182,34 @@ def child(mode: str, module: str, profile: Path) -> dict:
 
 
 class LazyImportsTest(unittest.TestCase):
-    def check_child(self, mode, module):
+    def check_child(self, mode, module, source=None):
         with tempfile.TemporaryDirectory(prefix="ps5-import-test-") as directory:
-            profile = Path(directory)
+            root = Path(directory)
+            isolated = root / "source"
+            copy_import_sources(REPO if source is None else source, isolated)
+            profile = root / "profile"
+            profile.mkdir()
             (profile / "consoles.json").write_bytes(b'{"account":null,"consoles":{}}')
-            proc = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "--child", mode, module, directory],
-                                  capture_output=True, text=True, timeout=30)
+            env = {**os.environ, "PS5_LAZY_IMPORT_REPO": str(isolated)}
+            proc = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "--child", mode, module, str(profile)],
+                                  cwd=isolated, env=env, capture_output=True, text=True, timeout=30)
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
             self.assertEqual(json.loads(proc.stdout)["result"], "PASS")
             self.assertEqual(proc.stderr, "")
         self.assertFalse(profile.exists())
+
+    def test_configured_checkout_keeps_local_configuration_out_of_imports(self):
+        with tempfile.TemporaryDirectory(prefix="ps5-configured-source-") as directory:
+            checkout = Path(directory) / "source"
+            copy_import_sources(REPO, checkout)
+            # Synthetic only: any accidental parsing of this file must fail.
+            config = b"PSN_NPSSO=synthetic-not-a-credential\nINVALID_UTF8=\xff\n"
+            (checkout / ".env.local").write_bytes(config)
+            for module in ("psn", "server", "mcp_server"):
+                with self.subTest(module=module):
+                    self.check_child("audit", module, source=checkout)
+            self.assertEqual((checkout / ".env.local").read_bytes(), config)
+        self.assertFalse(checkout.exists())
 
     def test_real_passive_imports_do_not_load_optional_clients(self):
         for module in ("psn", "server", "mcp_server"):
