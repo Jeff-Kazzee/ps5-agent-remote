@@ -96,7 +96,7 @@ class ToolTestCase(unittest.TestCase):
 
     def remote(self, routes=None):
         fake = FakeRemote(routes)
-        patcher = mock.patch.object(mcp_server.requests, "request", fake)
+        patcher = mock.patch.object(requests, "request", fake)
         patcher.start()
         self.addCleanup(patcher.stop)
         return fake
@@ -144,7 +144,7 @@ class Ps5LookTest(ToolTestCase):
     def test_ps5_look_tells_the_agent_when_remote_server_is_down(self):
         # The SDK hides the text of any exception that is not a ToolError, so the
         # agent would see only "Error executing tool ps5_look".
-        with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ConnectionError()):
+        with mock.patch.object(requests, "request", side_effect=requests.ConnectionError()):
             with self.assertRaises(ToolError) as ctx:
                 call("ps5_look")
         self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
@@ -153,7 +153,7 @@ class Ps5LookTest(ToolTestCase):
 
 
     def test_ps5_look_tells_the_agent_when_remote_server_times_out(self):
-        with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ReadTimeout()):
+        with mock.patch.object(requests, "request", side_effect=requests.ReadTimeout()):
             with self.assertRaises(ToolError) as ctx:
                 call("ps5_look")
         self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
@@ -163,7 +163,7 @@ class Ps5LookTest(ToolTestCase):
     def test_ps5_look_reports_a_connect_timeout_as_a_timeout(self):
         # ConnectTimeout is both a ConnectionError and a Timeout. It means the server was
         # not reached in time, not that it is stopped.
-        with mock.patch.object(mcp_server.requests, "request", side_effect=requests.ConnectTimeout()):
+        with mock.patch.object(requests, "request", side_effect=requests.ConnectTimeout()):
             with self.assertRaises(ToolError) as ctx:
                 call("ps5_look")
         self.assertIn("did not answer within 45 seconds", str(ctx.exception))

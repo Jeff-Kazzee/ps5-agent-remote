@@ -10,9 +10,10 @@ import os
 import threading
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from psnawp_api import PSNAWP
-from psnawp_api.models.search.games_search_datatypes import SearchDomain
+if TYPE_CHECKING:
+    from psnawp_api import PSNAWP
 
 ENV_LOCAL = Path(__file__).parent / ".env.local"
 LIBRARY_TTL_S = 1800
@@ -41,6 +42,8 @@ class PSN:
             if not npsso:
                 raise PSNError("PlayStation Network is not connected. Add the NPSSO token on the remote page.")
             try:
+                from psnawp_api import PSNAWP
+
                 self._client = PSNAWP(npsso)
             except Exception as err:  # noqa: BLE001
                 raise PSNError(f"PSN sign-in failed: {err}. The NPSSO token may be expired.") from err
@@ -143,7 +146,10 @@ class PSN:
             pass
         out = []
         with self._lock:
-            for item in self.client().search(query, SearchDomain.FULL_GAMES, limit=limit):
+            client = self.client()
+            from psnawp_api.models.search.games_search_datatypes import SearchDomain
+
+            for item in client.search(query, SearchDomain.FULL_GAMES, limit=limit):
                 r = item.get("result") or {}
                 prod = r.get("defaultProduct") or r
                 price = r.get("price") or prod.get("price") or {}

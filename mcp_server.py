@@ -9,13 +9,15 @@ from __future__ import annotations
 import base64
 import os
 import time
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import requests
 from pydantic import BaseModel, Field
 from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
+
+if TYPE_CHECKING:
+    import requests
 
 BASE = os.environ.get("PS5_REMOTE_URL", "http://127.0.0.1:8765")
 HEADERS = {"X-Client": "agent"}
@@ -85,6 +87,8 @@ class RemoteDown(ToolError):
 
 
 def _req(method: str, path: str, **kw) -> requests.Response:
+    import requests
+
     timeout = kw.pop("timeout", 45)
     try:
         return requests.request(method, BASE + path, headers=HEADERS, timeout=timeout, **kw)
