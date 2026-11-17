@@ -1,5 +1,7 @@
 # 2. PS5 setup
 
+Last reviewed: 2026-11-14 against `496da9ff39f6` for the setup handlers, UI text and credential paths. Console settings and Sony sign-in behavior remain unverified.
+
 You do this once. Have the PS5 on and the remote page open
 (http://127.0.0.1:8765).
 

@@ -7,14 +7,46 @@ The build uses [zig](https://ziglang.org) as the C compiler, installed as a
 Python package, so you don't need Visual Studio, MSYS2 or CMake. Nothing is
 installed system-wide.
 
+Last verified: 2026-11-14 against the Python 3.12.16 package metadata and source-checkout instructions. Windows execution remains unverified.
+
 ## Steps
 
-From the project folder in PowerShell:
+First get the project-local Python 3.12.16 from the
+[install guide](01-install.md#12-get-patched-python). From the project folder
+in PowerShell:
 
 ```powershell
-git clone --depth 1 --branch v1.10.0 --recurse-submodules --shallow-submodules https://github.com/streetpea/chiaki-ng.git vendor\chiaki-ng-src
-py -3.12 -m venv .buildenv
+$ErrorActionPreference = "Stop"
+if (!(Test-Path vendor\chiaki-ng-src)) {
+    git clone --depth 1 --branch v1.10.0 --recurse-submodules --shallow-submodules https://github.com/streetpea/chiaki-ng.git vendor\chiaki-ng-src
+    if ($LASTEXITCODE -ne 0) { throw "Native source clone failed" }
+}
+$sourceHead = git -C vendor\chiaki-ng-src rev-parse HEAD
+if ($LASTEXITCODE -ne 0 -or $sourceHead -ne "0c4a45df0cae2af2ba2daef84e881850b07038a3") {
+    throw "Expected chiaki-ng v1.10.0 source. Preserve the existing checkout and inspect it before continuing."
+}
+$sourceChanges = git -C vendor\chiaki-ng-src status --porcelain --untracked-files=no --ignore-submodules=none
+if ($LASTEXITCODE -ne 0 -or $sourceChanges) { throw "Native source has changes. Preserve them before continuing." }
+$submodules = git -C vendor\chiaki-ng-src submodule status --recursive
+if ($LASTEXITCODE -ne 0 -or ($submodules -match '^[+U-]')) { throw "Native submodules are incomplete or differ from the pinned source." }
+```
+
+The block clones only when the source folder is absent. Existing builders
+reuse a clean checkout at the expected commit and submodule revisions. If a
+check fails, keep the existing source and any edits. Inspect them, or rename
+the folder to an unused backup name before rerunning the block to clone a
+fresh copy. These steps do not reset, clean or overwrite an existing checkout.
+
+After the source checks pass, create or recreate the build environment.
+Stop any build process using the old `.buildenv` first:
+
+```powershell
+.python\python\python.exe -m venv --clear .buildenv
+if ($LASTEXITCODE -ne 0) { throw "Build environment creation failed" }
 .buildenv\Scripts\python.exe -m pip install ziglang "protobuf>=4,<6" grpcio-tools requests
+if ($LASTEXITCODE -ne 0) { throw "Build dependency installation failed" }
+.buildenv\Scripts\python.exe -m pip check
+if ($LASTEXITCODE -ne 0) { throw "Build dependency compatibility check failed" }
 .buildenv\Scripts\python.exe tools\build_native.py
 ```
 

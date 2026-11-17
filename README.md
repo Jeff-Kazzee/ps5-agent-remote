@@ -58,8 +58,9 @@ the frames.
 
 ## Connect
 
-Requires Windows 10 or 11, 64-bit, Python 3.11 or newer, and a PS5 on the same
-home network with a PlayStation Network account signed in.
+Requires Windows 10 or 11, 64-bit, and a PS5 on the same home network with a
+PlayStation Network account signed in. The install guide supplies patched
+Python 3.12.16 in the project folder.
 
 1. **Install** Python, this project and its packages. See [01 Install](docs/01-install.md).
 2. **Prepare the PS5.** Turn on Remote Play and network wake. See [02 PS5 setup](docs/02-ps5-setup.md).

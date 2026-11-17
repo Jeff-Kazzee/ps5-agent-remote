@@ -1,5 +1,7 @@
 # 5. Troubleshooting
 
+Last reviewed: 2026-11-14 against `496da9ff39f6` for the error paths and diagnostic commands. Windows, network and console remedies remain unverified.
+
 Start with the console window that `start.cmd` opened. Errors show up there.
 For more detail, set `PS5_CHIAKI_LOG_MASK=31` in `.env.local` and restart.
 

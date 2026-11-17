@@ -20,9 +20,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      # CPython's Windows installers stop at 3.12.10. Keep the existing 3.12
+      # dependencies with Astral's maintained build of the security release.
+      - name: Install CPython 3.12.16
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP "cpython-3.12.16.tar.gz"
+          $runtime = Join-Path $env:RUNNER_TEMP "ps5-python"
+          Invoke-WebRequest -Uri "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.12.16%2B20261110-x86_64-pc-windows-msvc-install_only.tar.gz" -OutFile $archive
+          $expected = "e23fe5b16926de1d81661b1a97352e89fb167549c55a6825796ccd0f32ec7f1b"
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+            throw "Python archive SHA-256 mismatch"
+          }
+          New-Item -ItemType Directory -Path $runtime -ErrorAction Stop | Out-Null
+          tar -xzf $archive -C $runtime
+          if ($LASTEXITCODE -ne 0) { throw "Python archive extraction failed" }
+          $pythonDirectory = Join-Path $runtime "python"
+          & "$pythonDirectory\python.exe" -c "import sys, struct, ssl; assert sys.version_info[:3] == (3, 12, 16); assert struct.calcsize('P') == 8; print(sys.executable, sys.version, ssl.OPENSSL_VERSION)"
+          if ($LASTEXITCODE -ne 0) { throw "Python runtime verification failed" }
+          $pythonDirectory | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Fetch chiaki-ng v1.10.0 source
         run: git clone --depth 1 --branch v1.10.0 --recurse-submodules --shallow-submodules https://github.com/streetpea/chiaki-ng.git vendor/chiaki-ng-src
@@ -37,6 +53,9 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install -r requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw "Application dependency installation failed" }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { throw "Dependency compatibility check failed" }
           python -c "import ps5native; ps5native.dll(); import server, mcp_server; print('imports ok')"
 
       - name: Run the unit tests

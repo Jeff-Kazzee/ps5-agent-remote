@@ -1,5 +1,7 @@
 # 6. HTTP API
 
+Last reviewed: 2026-11-14 against `496da9ff39f6` for the route handlers and request fields. Live console requests and Sony service behavior remain unverified.
+
 The server listens on `http://127.0.0.1:8765` (local only). The page and
 the MCP server use this API, and your own scripts can too. Send the header
 `X-Client: <name>` to label your actions in the Activity feed.

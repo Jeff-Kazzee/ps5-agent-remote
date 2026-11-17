@@ -1,5 +1,6 @@
 .venv/
 .buildenv/
+.python/
 __pycache__/
 *.log
 .env.local

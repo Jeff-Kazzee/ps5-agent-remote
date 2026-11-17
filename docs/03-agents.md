@@ -1,5 +1,7 @@
 # 3. Connect an AI agent
 
+Last reviewed: 2026-11-14 against `496da9ff39f6` for the configuration helper and MCP tool definitions. Client app setup and live console behavior remain unverified.
+
 The agent tools come from `mcp_server.py`, a standard MCP server (stdio).
 It talks to the running remote server, so **start the remote
 (`start.cmd`) before you use the tools.**
