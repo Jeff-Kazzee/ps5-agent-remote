@@ -155,7 +155,8 @@ environment into the new one. If `.venv` is missing or its version check
 fails after an interrupted update, use the same runtime choices above and
 rerun section 1.3.
 Recreate an existing `.buildenv` with the [build steps](07-building.md) too.
-Keep `.env.local` and the console credentials in `$HOME\.ps5-remote`.
+Keep `.env.local` in the project folder. Keep console credentials in
+`$HOME\.ps5-remote`, or in your configured `PS5_REMOTE_HOME` folder.
 
 If `.venv` already reports Python 3.12.16, still verify the trusted runtime
 above first. If `.python` is absent, older, incomplete or unverified, use
